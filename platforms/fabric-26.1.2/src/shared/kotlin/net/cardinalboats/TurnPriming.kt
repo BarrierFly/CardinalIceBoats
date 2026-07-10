@@ -13,8 +13,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
 import net.minecraft.world.entity.vehicle.boat.AbstractBoat
 import net.minecraft.world.level.Level
-import net.minecraft.world.level.block.AirBlock
-
 @Suppress("MagicNumber")
 object TurnPriming: TurnPrimingBase {
 
@@ -81,20 +79,20 @@ object TurnPriming: TurnPrimingBase {
     private var lTurnPrimed = false
     private var rTurnPrimed = false
 
-    private val toScanMapLeft = mapOf(Direction.SOUTH to arrayOf(intArrayOf(3, 0), intArrayOf(3, -1), intArrayOf(3, -2)),
-                                      Direction.NORTH to arrayOf(intArrayOf(-3, 0), intArrayOf(-3, 1), intArrayOf(-3, 2)),
-                                      Direction.EAST to arrayOf(intArrayOf(0, -3), intArrayOf(-1, -3), intArrayOf(-2, -3)),
-                                      Direction.WEST to arrayOf(intArrayOf(0, 3), intArrayOf(1, 3), intArrayOf(2, 3)))
+    private val toScanMapLeft = mapOf(Direction.SOUTH to arrayOf(intArrayOf(3, 0), intArrayOf(3, -1), intArrayOf(3, 1), intArrayOf(3, -2), intArrayOf(3, 2)),
+                                      Direction.NORTH to arrayOf(intArrayOf(-3, 0), intArrayOf(-3, 1), intArrayOf(-3, -1), intArrayOf(-3, 2), intArrayOf(-3, -2)),
+                                      Direction.EAST to arrayOf(intArrayOf(0, -3), intArrayOf(-1, -3), intArrayOf(1, -3), intArrayOf(-2, -3), intArrayOf(2, -3)),
+                                      Direction.WEST to arrayOf(intArrayOf(0, 3), intArrayOf(1, 3), intArrayOf(-1, 3), intArrayOf(2, 3), intArrayOf(-2, 3)))
 
-    private val toScanMapRight = mapOf(Direction.SOUTH to arrayOf(intArrayOf(-3, 0), intArrayOf(-3, -1), intArrayOf(-3, -2)),
-                                       Direction.NORTH to arrayOf(intArrayOf(3, 0), intArrayOf(3, 1), intArrayOf(3, 2)),
-                                       Direction.EAST to arrayOf(intArrayOf(0, 3), intArrayOf(-1, 3), intArrayOf(-2, 3)),
-                                       Direction.WEST to arrayOf(intArrayOf(0, -3), intArrayOf(1, -3), intArrayOf(2, -3)))
+    private val toScanMapRight = mapOf(Direction.SOUTH to arrayOf(intArrayOf(-3, 0), intArrayOf(-3, -1), intArrayOf(-3, 1), intArrayOf(-3, -2), intArrayOf(-3, 2)),
+                                       Direction.NORTH to arrayOf(intArrayOf(3, 0), intArrayOf(3, 1), intArrayOf(3, -1), intArrayOf(3, 2), intArrayOf(3, -2)),
+                                       Direction.EAST to arrayOf(intArrayOf(0, 3), intArrayOf(-1, 3), intArrayOf(1, 3), intArrayOf(-2, 3), intArrayOf(2, 3)),
+                                       Direction.WEST to arrayOf(intArrayOf(0, -3), intArrayOf(1, -3), intArrayOf(-1, -3), intArrayOf(2, -3), intArrayOf(-2, -3)))
 
-    private val snapBlockMap = mapOf(Direction.SOUTH to arrayOf(intArrayOf(0, 0), intArrayOf(0, -1), intArrayOf(0, -2)),
-                                     Direction.NORTH to arrayOf(intArrayOf(0, 0), intArrayOf(0, 1), intArrayOf(0, 2)),
-                                     Direction.EAST to arrayOf(intArrayOf(0, 0), intArrayOf(-1, 0), intArrayOf(-2, 0)),
-                                     Direction.WEST to arrayOf(intArrayOf(0, 0), intArrayOf(1, 0), intArrayOf(2, 0)))
+    private val snapBlockMap = mapOf(Direction.SOUTH to arrayOf(intArrayOf(0, 0), intArrayOf(0, -1), intArrayOf(0, 1), intArrayOf(0, -2), intArrayOf(0, 2)),
+                                     Direction.NORTH to arrayOf(intArrayOf(0, 0), intArrayOf(0, 1), intArrayOf(0, -1), intArrayOf(0, 2), intArrayOf(0, -2)),
+                                     Direction.EAST to arrayOf(intArrayOf(0, 0), intArrayOf(-1, 0), intArrayOf(1, 0), intArrayOf(-2, 0), intArrayOf(2, 0)),
+                                     Direction.WEST to arrayOf(intArrayOf(0, 0), intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(2, 0), intArrayOf(-2, 0)))
 
     val centerTask = {
         val boat = Minecraft.getInstance().player?.vehicle

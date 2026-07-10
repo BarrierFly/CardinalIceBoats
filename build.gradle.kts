@@ -21,7 +21,7 @@ configurations.all {
 modVersion {
     semanticVersion = "2.2.0"
     release = {
-        System.getenv("IPNEXT_RELEASE") != null
+        true
     }
 }
 
