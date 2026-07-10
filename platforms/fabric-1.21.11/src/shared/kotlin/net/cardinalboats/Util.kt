@@ -2,11 +2,13 @@ package net.cardinalboats
 
 import net.cardinalboats.alias.*
 import net.cardinalboats.config.CIBConfig
+import net.minecraft.state.property.Properties
 
 import java.util.regex.Pattern
 import kotlin.math.roundToInt
 
 private val icePattern = Pattern.compile("(\\b|_)ice\\b", Pattern.CASE_INSENSITIVE)
+private val waterPattern = Pattern.compile("(\\b|_)water\\b", Pattern.CASE_INSENSITIVE)
 
 
 @JvmField
@@ -32,11 +34,18 @@ fun rotateBoat(boat: AbstractBoatEntity, rotation: Float, maintainVelocity: Bool
 }
 
 fun isIce(blockState: BlockState): Boolean {
-    if (icePattern.matcher(blockState.block.toString()).find()) {
+    return icePattern.matcher(blockState.block.toString()).find()
+}
+
+fun isWater(blockState: BlockState): Boolean {
+    if (waterPattern.matcher(blockState.block.toString()).find()) {
         return true
-    } else {
-        return false
     }
+    // Also treat waterlogged blocks as water
+    if (blockState.contains(Properties.WATERLOGGED) && blockState.get(Properties.WATERLOGGED)) {
+        return true
+    }
+    return false
 }
 
 fun clientChatLog(player: ClientPlayerEntity?, message: String) {
@@ -52,8 +61,9 @@ fun shouldSnap(level: World, player: PlayerEntity): Boolean {
     // If we are putting a boat on a block
     val lookingAt = player.raycast(20.0, 0.0f, false)
     if (lookingAt != null && lookingAt.type == HitResultType.BLOCK) {
-        // If that block is ice, return true
+        // If that block is ice or water, return true
         return isIce(level.getBlockState((lookingAt as BlockHitResult).blockPos))
+                || isWater(level.getBlockState((lookingAt as BlockHitResult).blockPos))
     }
     return false
 }

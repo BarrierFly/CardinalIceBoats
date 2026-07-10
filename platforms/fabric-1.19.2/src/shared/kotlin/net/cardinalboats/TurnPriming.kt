@@ -109,45 +109,41 @@ object TurnPriming: TurnPrimingBase {
         if (player != null && player.vehicle != null && player.vehicle is AbstractBoatEntity) {
             tasks.runAll()
             val boat = player.vehicle as AbstractBoatEntity
-            if (isIce(boat.steppingBlockState)) {
-                while (lQueueKey.wasPressed()) {
-                    clientChatLog(player, translatable("info.cardinalboats.left_turn_queue").string)
-                    lTurnPrimed = true
-                    rTurnPrimed = false
-                }
-                while (rQueueKey.wasPressed()) {
-                    clientChatLog(player, translatable("info.cardinalboats.right_turn_queue").string)
-                    rTurnPrimed = true
-                    lTurnPrimed = false
-                }
+            while (lQueueKey.wasPressed()) {
+                clientChatLog(player, translatable("info.cardinalboats.left_turn_queue").string)
+                lTurnPrimed = true
+                rTurnPrimed = false
+            }
+            while (rQueueKey.wasPressed()) {
+                clientChatLog(player, translatable("info.cardinalboats.right_turn_queue").string)
+                rTurnPrimed = true
+                lTurnPrimed = false
+            }
 
-                if (CIBConfig.getInstance().alwaysSmartCenter && boat.yaw % 90 == 0f) {
-                    TickCountingTask(task = centerTask).addTask().runNow()
-                }
+            if (CIBConfig.getInstance().alwaysSmartCenter && boat.yaw % 90 == 0f) {
+                TickCountingTask(task = centerTask).addTask().runNow()
+            }
 
-                while (smartCenterKey.wasPressed()) {
-                    TickCountingTask(task = centerTask).addTask().runNow()
-                }
+            while (smartCenterKey.wasPressed()) {
+                TickCountingTask(task = centerTask).addTask().runNow()
+            }
 
-                val world = minecraft.world!!
+            val world = minecraft.world!!
 
-                if (lTurnPrimed && shouldTurn(boat, world, true)) {
-                    rotateBoat(boat, roundYRot(boat.yaw - 90, 90), CIBConfig.getInstance().maintainVelocityOnTurns)
-                    lTurnPrimed = false
-                    clientChatLog(player, translatable("info.cardinalboats.left_turn_complete").string)
-                    TickCountingTask {
-                        if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask()
-                    }.addTask().runNow()
-                } else if (rTurnPrimed && shouldTurn(boat, world, false)) {
-                    rotateBoat(boat, roundYRot(boat.yaw + 90, 90), CIBConfig.getInstance().maintainVelocityOnTurns)
-                    rTurnPrimed = false
-                    clientChatLog(player, translatable("info.cardinalboats.right_turn_complete").string)
-                    TickCountingTask {
-                        if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask()
-                    }.addTask().runNow()
-                }
-            } else {
-                while (lQueueKey.wasPressed() || rQueueKey.wasPressed() || smartCenterKey.wasPressed()) {}
+            if (lTurnPrimed && shouldTurn(boat, world, true)) {
+                rotateBoat(boat, roundYRot(boat.yaw - 90, 90), CIBConfig.getInstance().maintainVelocityOnTurns)
+                lTurnPrimed = false
+                clientChatLog(player, translatable("info.cardinalboats.left_turn_complete").string)
+                TickCountingTask {
+                    if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask()
+                }.addTask().runNow()
+            } else if (rTurnPrimed && shouldTurn(boat, world, false)) {
+                rotateBoat(boat, roundYRot(boat.yaw + 90, 90), CIBConfig.getInstance().maintainVelocityOnTurns)
+                rTurnPrimed = false
+                clientChatLog(player, translatable("info.cardinalboats.right_turn_complete").string)
+                TickCountingTask {
+                    if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask()
+                }.addTask().runNow()
             }
         } else {
             // if we aren't on the boat anymore, we don't care
@@ -179,7 +175,8 @@ object TurnPriming: TurnPrimingBase {
 
         for (i in map.indices) {
             val testBlockPos = BlockPos(rootX + map[i][0], rootY, rootZ + map[i][1])
-            if (isIce(level.getBlockState(testBlockPos))) {
+            val testBlockPosAbove = BlockPos(rootX + map[i][0], rootY + 1, rootZ + map[i][1])
+            if (isIce(level.getBlockState(testBlockPos)) || isWater(level.getBlockState(testBlockPosAbove))) {
                 lieAboutMovingForward = true
                 val snapBlock = snapBlockMap[direction]!![i]
                 boat.setPosition(rootX + snapBlock[0] + 0.5, boat.y, rootZ + snapBlock[1] + 0.5)

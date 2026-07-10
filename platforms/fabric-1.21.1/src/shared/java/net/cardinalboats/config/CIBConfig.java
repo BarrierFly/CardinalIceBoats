@@ -20,6 +20,9 @@ public class CIBConfig implements ConfigData {
     public boolean eightWaySnapKey = true;
 
     @ConfigEntry.Gui.Tooltip
+    public boolean smartCenterOnSnap = false;
+
+    @ConfigEntry.Gui.Tooltip
     public boolean moveWhileChatting = true;
 
     @ConfigEntry.Gui.Tooltip

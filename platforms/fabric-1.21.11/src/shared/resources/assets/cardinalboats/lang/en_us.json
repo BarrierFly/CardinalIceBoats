@@ -27,6 +27,9 @@
     "text.autoconfig.CardinalBoat.option.eightWaySnapKey.boolean.true":             "§bEight-Way",
     "text.autoconfig.CardinalBoat.option.eightWaySnapKey.boolean.false":            "§6Four-Way",
 
+    "text.autoconfig.CardinalBoat.option.smartCenterOnSnap":                        "Smart Center on Re-Snap",
+    "text.autoconfig.CardinalBoat.option.smartCenterOnSnap.@Tooltip":               "Pressing the Re-Snap key will also smart center the boat in the lane.",
+
     "text.autoconfig.CardinalBoat.option.alwaysSmartCenter":                        "Always Smart Center",
     "text.autoconfig.CardinalBoat.option.alwaysSmartCenter.@Tooltip":               "Runs smart center all the time when boat is perfectly cardinally aligned",
 
