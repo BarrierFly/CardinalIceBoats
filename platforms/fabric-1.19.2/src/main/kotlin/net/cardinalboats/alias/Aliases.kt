@@ -57,6 +57,6 @@ fun translatable(value: String) = Text.translatable(value)
 fun makeText(value: String) = Text.literal(value)
 
 val BoatEntity.controllingPassenger : Entity?
-    get() = this.primaryPassenger
+    get() = this.passengerList.firstOrNull()
 
 const val KEY_BINDING_CATEGORY = "key.category.cardinalboats.binding_category"
