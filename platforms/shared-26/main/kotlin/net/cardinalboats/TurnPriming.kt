@@ -208,58 +208,116 @@ object TurnPriming: TurnPrimingBase {
         }
 
         // Step 1: probe the lane the boat is currently in (front block + front-upper block).
-        // If both are clear, there is nothing to dodge.
         val frontBlocked = collidesAt(dx, dz, 0) || collidesAt(dx, dz, 1)
-        if (!frontBlocked) return
 
-        // Step 2: probe the lane one block to the left and one block to the right.
-        val leftBlocked  = collidesAt(dx + lx, dz + lz, 0) || collidesAt(dx + lx, dz + lz, 1)
-        val rightBlocked = collidesAt(dx - lx, dz - lz, 0) || collidesAt(dx - lx, dz - lz, 1)
+        // If a collision is in front, try the new single-block lateral dodge first.
+        // If the dodge decides a side, apply it and return — the original center-on-lane
+        // logic is skipped so the boat moves from its current position.
+        // If the dodge decides "no nudge" (or the front is clear), fall through to the
+        // original centering logic.
+        if (frontBlocked) {
+            val leftBlocked  = collidesAt(dx + lx, dz + lz, 0) || collidesAt(dx + lx, dz + lz, 1)
+            val rightBlocked = collidesAt(dx - lx, dz - lz, 0) || collidesAt(dx - lx, dz - lz, 1)
 
-        // Step 3: decide lateral offset.
-        val nudge: Double = when {
-            !leftBlocked && rightBlocked  -> -0.2  // only left lane is open -> step left
-            !rightBlocked && leftBlocked  ->  0.2  // only right lane is open -> step right
-            else -> {
-                // Both sides open, or both sides blocked: pick from in-block position + bow drift.
-                val centerX = rootX + 0.5
-                val centerZ = rootZ + 0.5
-                val sideOffset = (boat.x - centerX) * lx + (boat.z - centerZ) * lz
-                val centered = kotlin.math.abs(sideOffset) < 0.02
+            // Decide a signed "right step" in {-0.2, 0, +0.2}. Positive means step right,
+            // i.e. along the right vector (-lx, -lz).
+            val nudge: Double = when {
+                !leftBlocked && rightBlocked  -> -0.2  // only left lane is open -> step left
+                !rightBlocked && leftBlocked  ->  0.2  // only right lane is open -> step right
+                else -> {
+                    // Both sides open, or both sides blocked: pick from in-block position + bow drift.
+                    val centerX = rootX + 0.5
+                    val centerZ = rootZ + 0.5
+                    // sideOffset > 0 means the boat is sitting on the "left" side of the lane.
+                    val sideOffset = (boat.x - centerX) * lx + (boat.z - centerZ) * lz
+                    val centered = kotlin.math.abs(sideOffset) < 0.02
 
-                if (!centered) {
-                    // Boat already off-center in this lane: lean toward the side it sits on.
-                    if (sideOffset < 0) -0.2 else 0.2
-                } else {
-                    // Boat is centered in the lane: pick by bow drift.
-                    val facingYaw = when (direction) {
-                        Direction.SOUTH ->   0f
-                        Direction.WEST  ->  90f
-                        Direction.NORTH -> 180f
-                        Direction.EAST  -> 270f
-                        else -> 0f
-                    }
-                    // Wrap yaw diff into (-180, 180].
-                    var diff = boat.yRot - facingYaw
-                    diff = ((diff + 180f) % 360f + 360f) % 360f - 180f
-                    when {
-                        diff < -0.5f  -> -0.2  // bow points to the left of facing
-                        diff >  0.5f  ->  0.2  // bow points to the right of facing
-                        else          ->  0.2  // bow straight ahead: default to right
+                    if (!centered) {
+                        // Lean toward the side the boat already sits on.
+                        if (sideOffset > 0) -0.2 else 0.2
+                    } else {
+                        // Boat is centered in the lane: pick by bow drift.
+                        val facingYaw = when (direction) {
+                            Direction.SOUTH ->   0f
+                            Direction.WEST  ->  90f
+                            Direction.NORTH -> 180f
+                            Direction.EAST  -> 270f
+                            else -> 0f
+                        }
+                        // Wrap yaw diff into (-180, 180].
+                        var diff = boat.yRot - facingYaw
+                        diff = ((diff + 180f) % 360f + 360f) % 360f - 180f
+                        when {
+                            diff < -0.5f  -> -0.2  // bow points to the left of facing
+                            diff >  0.5f  ->  0.2  // bow points to the right of facing
+                            else          ->  0.2  // bow straight ahead: default to right
+                        }
                     }
                 }
             }
+
+            if (nudge != 0.0) {
+                // Apply nudge as a vector along (-lx, -lz). Same formula works for all 4 facings.
+                boat.setPos(boat.x - nudge * lx,
+                            boat.y,
+                            boat.z - nudge * lz)
+                return
+            }
         }
 
-        if (nudge == 0.0) return  // nothing decided (defensive)
-
-        // Step 4: move the boat from its *current* position by the decided nudge.
-        // Skip the lane-center snap; only adjust laterally.
+        // Fall through: original multi-block centering logic. Used when the front is clear,
+        // or when the new dodge above decided "no nudge" for a blocked front.
+        val scanAhead = CIBConfig.getInstance().smartCenterLookAhead
         if (direction == Direction.NORTH || direction == Direction.SOUTH) {
-            boat.setPos(boat.x + nudge, boat.y, boat.z)
+            val startZ = if (direction == Direction.NORTH) -scanAhead else -1
+            val endZ = if (direction == Direction.NORTH) 1 else scanAhead
+            val nudgeX = calculateNudge(world,
+                                        startZ,
+                                        endZ,
+                                        { z ->
+                                            BlockPos(rootX - 1, rootY, rootZ + z)
+                                        },
+                                        { z ->
+                                            BlockPos(rootX + 1, rootY, rootZ + z)
+                                        }
+            )
+            //logger.info("NS setting boat pos to x: ${rootX + 0.5 + nudgeX}, y: ${boat.y}, z: ${boat.z}")
+            boat.setPos(rootX + 0.5 + nudgeX, boat.y, boat.z)
         } else {
-            boat.setPos(boat.x, boat.y, boat.z + nudge)
+            val startX = if (direction == Direction.WEST) -scanAhead else -1
+            val endX = if (direction == Direction.WEST) 1 else scanAhead
+            val nudgeZ = calculateNudge(world,
+                                        startX,
+                                        endX,
+                                        { x ->
+                                            BlockPos(rootX + x, rootY, rootZ - 1)
+                                        },
+                                        { x ->
+                                            BlockPos(rootX + x, rootY, rootZ + 1)
+                                        }
+            )
+            //logger.info("setting boat pos to x: ${boat.x}, y: ${boat.x}, z: ${rootZ + 0.5 + nudgeZ}")
+            boat.setPos(boat.x, boat.y, rootZ + 0.5 + nudgeZ)
         }
+    }
+
+    private fun calculateNudge(world: Level,
+                               start: Int,
+                               end: Int,
+                               leftBlockPosFunc: (Int) -> BlockPos,
+                               rightBlockPosFunc: (Int) -> BlockPos): Double {
+        var nudge = 0
+        for (i in start..end) {
+            val leftBlockPos = leftBlockPosFunc(i)
+            val rightBlockPos = rightBlockPosFunc(i)
+            val leftState = world.getBlockState(leftBlockPos)
+            val rightState = world.getBlockState(rightBlockPos)
+            if (!leftState.getCollisionShape(world, leftBlockPos).isEmpty)
+                nudge += 1
+            if (!rightState.getCollisionShape(world, rightBlockPos).isEmpty)
+                nudge -= 1
+        }
+        return Mth.clamp(nudge.toDouble(), -0.2, 0.2)
     }
 
     private fun MutableList<TickCountingTask>.runAll() {
