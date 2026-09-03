@@ -212,50 +212,20 @@ object TurnPriming: TurnPrimingBase {
         // Step 1: probe the lane the boat is currently in (front block + front-upper block).
         val frontBlocked = collidesAt(dx, dz, 0) || collidesAt(dx, dz, 1)
 
-        // If a collision is in front, try the new single-block lateral dodge first.
-        // If the dodge decides a side, apply it and return — the original center-on-lane
-        // logic is skipped so the boat moves from its current position.
-        // If the dodge decides "no nudge" (or the front is clear), fall through to the
-        // original centering logic.
+        // If a collision is in front, the new single-block lateral dodge runs *only* when
+        // exactly one side lane is open — that is the only case the new logic is allowed
+        // to nudge the boat from its current position. Any other case (front clear, both
+        // sides open, both sides blocked) falls through to the original multi-block
+        // centering logic.
         if (frontBlocked) {
             val leftBlocked  = collidesAt(dx + lx, dz + lz, 0) || collidesAt(dx + lx, dz + lz, 1)
             val rightBlocked = collidesAt(dx - lx, dz - lz, 0) || collidesAt(dx - lx, dz - lz, 1)
 
-            // Decide a signed "right step" in {-0.2, 0, +0.2}. Positive means step right,
-            // i.e. along the right vector (-lx, -lz).
+            // Signed "right step" in {-0.2, 0, +0.2}. Positive means step right, along (-lx, -lz).
             val nudge: Double = when {
                 !leftBlocked && rightBlocked  -> -0.2  // only left lane is open -> step left
                 !rightBlocked && leftBlocked  ->  0.2  // only right lane is open -> step right
-                else -> {
-                    // Both sides open, or both sides blocked: pick from in-block position + bow drift.
-                    val centerX = rootX + 0.5
-                    val centerZ = rootZ + 0.5
-                    // sideOffset > 0 means the boat is sitting on the "left" side of the lane.
-                    val sideOffset = (boat.x - centerX) * lx + (boat.z - centerZ) * lz
-                    val centered = kotlin.math.abs(sideOffset) < 0.02
-
-                    if (!centered) {
-                        // Lean toward the side the boat already sits on.
-                        if (sideOffset > 0) -0.2 else 0.2
-                    } else {
-                        // Boat is centered in the lane: pick by bow drift.
-                        val facingYaw = when (direction) {
-                            Direction.SOUTH ->   0f
-                            Direction.WEST  ->  90f
-                            Direction.NORTH -> 180f
-                            Direction.EAST  -> 270f
-                            else -> 0f
-                        }
-                        // Wrap yaw diff into (-180, 180].
-                        var diff = boat.yaw - facingYaw
-                        diff = ((diff + 180f) % 360f + 360f) % 360f - 180f
-                        when {
-                            diff < -0.5f  -> -0.2  // bow points to the left of facing
-                            diff >  0.5f  ->  0.2  // bow points to the right of facing
-                            else          ->  0.2  // bow straight ahead: default to right
-                        }
-                    }
-                }
+                else                          ->  0.0  // any other case -> defer to original logic
             }
 
             if (nudge != 0.0) {
@@ -268,7 +238,7 @@ object TurnPriming: TurnPrimingBase {
         }
 
         // Fall through: original multi-block centering logic. Used when the front is clear,
-        // or when the new dodge above decided "no nudge" for a blocked front.
+        // when both side lanes are open, or when both side lanes are blocked.
         val scanAhead = CIBConfig.getInstance().smartCenterLookAhead
         if (direction == Direction.NORTH || direction == Direction.SOUTH) {
             val startZ = if (direction == Direction.NORTH) -scanAhead else -1
