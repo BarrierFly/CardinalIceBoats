@@ -1,4 +1,16 @@
 <!-- latest begin -->
+### 2.2.2
+
+- Rewrote `smartCenter` to a single-block lateral probe: instead of sweeping
+  multiple blocks ahead and snapping the boat back to the lane center, the new
+  algorithm inspects only the front block and the front-upper block of the
+  current lane, then probes the lanes one block to either side. If only one
+  side is open, the boat is nudged that way by `±0.2`. If both sides are open
+  or both blocked, the decision falls back to the boat's in-block lateral
+  position, and (when centered) to the bow's yaw drift. When a nudge is
+  decided, the boat is moved from its current position, skipping the
+  lane-center snap.
+
 ### 2.1.0
 
 - Added support for:
