@@ -1,96 +1,54 @@
 ![# Cardinal Ice Boats](https://github.com/CodeF53/CardinalIceBoats/raw/main/Banner.png)
 
-## 近期改动 (commit `7766b45` 起，至本仓库当前 HEAD)
+## 与原仓库的对比 (Comparison with Upstream)
 
-中 / EN — 涵盖 `7766b45 fix: use collision shape instead of air check in calculateNudge, restore multi-version build` 到本仓库当前 HEAD（含）之间的所有提交。
+本仓库 fork 自 [CodeF53/CardinalIceBoats](https://github.com/CodeF53/CardinalIceBoats)，共同祖先为 `50448ac`（原仓库 2026-05-31 发布的 v2.1.0）。此后两边独立演进：本仓库沿 2.2.x 系列做多版本支持与智能居中打磨；原仓库转向 MC 26.2 / 26.3 与 libIPN 配置系统，并于 2026-09-27 将 tag `v2.1.0` 重新指向新提交发布了新版。两边版本号不可直接比较，请以提交内容为准（本仓库当前 2.2.3，基于原仓库第一版 v2.1.0）。
 
-- **最新提交 — 第二轮打磨（详见 git log）**
-  - 冰/水识别改用原版标签：冰 = `#minecraft:ice`，水 = 流体状态为 `#minecraft:water`（含含水方块）。不再按方块名做正则匹配。
-  - Smart Center 侧向闪避增加落点检查：目标侧格若无冰（船下一格）/ 水（与船同高），视为有墙，不会把船推出车道。
-  - `Always Smart Center` 的朝向判断从浮点精确比较改为 0.5° 容差。
-  - 预约转向新增常驻指示：转向被预约期间，快捷栏上方持续显示 ◀◀ / ▶▶ 提示（随「显示状态消息」开关）。
-  - 修复 26.1.2 上「关闭聊天后继续前进」只在会话中第一次生效的回归（计时器未复位）。
-  - `ChatMoveLie` / `ChatMoveStartLying` 增加 player 判空；Re-Snap 的速度处理改由「转向时保持速度」配置统一控制。
-  - 共享代码改为单一来源：各平台通过 `sourceSets` 直接引用 `shared-26` / `shared-pre26`，删除各平台 `src/shared` 手工拷贝。
-  - 新增 JUnit 单元测试（`roundYRot` / `isCardinallyAligned` / `dodgeNudge` 决策表）；新增 `zh_cn.json` 语言文件。
-  - 配置项 `doChatShit` 更名为 `showStatusMessages`（旧配置文件中的该项会回到默认值，需重新设置）。
+### 本仓库独有（原仓库没有）
 
-- **`7766b45` — 修复探测方式 & 恢复多版本构建**
-  - `calculateNudge` 改用 `getCollisionShape().isEmpty` 判定，取代原先的 `!is AirBlock` 检查，从而把铁轨、火把等不参与碰撞的方块从"墙"中排除。
-  - 恢复 MC 1.19.2 – 1.21.11 的 Fabric 平台模块；将共享代码拆分为 `shared-26`（Mojang 命名空间）与 `shared-pre26`（Yarn 命名空间）。
-  - Gradle Wrapper 升到 9.5.1，foojay-resolver 升到 1.+。
+- **多版本支持**：Fabric 平台覆盖 MC 1.19.2 / 1.20.1 / 1.21.1 / 1.21.10 / 1.21.11 / 26.1.2；共享代码拆成 `shared-26`（Mojang 映射）与 `shared-pre26`（Yarn 映射）。原仓库已放弃 26 以下所有版本。
+- **Smart Center 重写**：单格侧向探测 + 落点冰/水校验（不会把船推出车道），原多格对中逻辑保留为兜底；修复 EAST / WEST 横移轴向与格内偏移符号两处 bug。
+- **Re-Snap 触发 Smart Center**（`smartCenterOnSnap` 配置项）；三个快捷键不再要求"船必须在冰上"。
+- **冰/水识别用原版标签**：冰 = `#minecraft:ice`，水 = 流体状态 `#minecraft:water`（含含水方块），取代按方块名正则匹配，且两者分离判定。
+- **预约转向常驻指示**：转向被预约期间，快捷栏上方持续显示 ◀◀ / ▶▶（受「显示状态消息」开关控制）。
+- **回归修复**：26.1.2 上「关闭聊天后继续前进」每会话只生效一次（计时器未复位）；`ChatMoveLie` / `ChatMoveStartLying` 增加 player 判空。
+- `calculateNudge` 改用碰撞箱（`getCollisionShape().isEmpty`）判墙，铁轨、火把等不参与碰撞的方块不再算墙。
+- 共享代码单源化：各平台经 `sourceSets` 引用 `shared-26` / `shared-pre26`，删除手工拷贝。
+- 新增 JUnit 单元测试（`roundYRot` / `isCardinallyAligned` / `dodgeNudge` 决策表）与 `zh_cn.json` 语言文件。
+- 配置项 `doChatShit` 更名 `showStatusMessages`；`Always Smart Center` 朝向判断改 0.5° 容差。
 
-- **`ba4a319` — Re-Snap 触发智能居中，键位放开冰面限制，冰/水分离识别**
-  - 在 Manual Snap 的 Re-Snap 操作后自动执行 Smart Center（可配置开关）。
-  - 三个键位不再要求"船必须在冰上"才生效。
-  - 冰面和水体识别逻辑分离。
+### 原仓库领先（本仓库尚未同步）
 
-- **`2d26ad7` — 1.19.3+ 兼容：使用 `passengerList.firstOrNull()` 代替 `primaryPassenger`**
+- **MC 26.2 / 26.3 支持**：Fabric / Forge / NeoForge × 26.1.2 / 26.2 / 26.3 共 9 个平台模块，Forge 26.x 构建已重新启用。26.2+ 的适配点：聊天打开注入点从 `Minecraft.handleKeybinds` 移到 `Gui.openChatScreen`；`InputConstants.Type.KEYSYM` 更名 `KEYBOARD`；`KeyMapping.Category` 需惰性注册（新增每版本 `Aliases.kt` 适配层）。
+- **配置系统迁移**：Cloth Config → libIPN（必需依赖 `[6.9.0, 6.10)`，配置存 `main-config.json`）；ModMenu 集成改走 libIPN `ConfigScreenBase`；`eightWaySnapKey` 布尔改枚举（Eight-Way / Four-Way）；不再支持 Cloth Config 与服务端安装，Forge 端不再需要 Kotlin for Forge。本仓库仍基于 Cloth Config。
+- **源码结构重构**：各 MC 版本的 mixin 收敛到 `platforms/shared/minecraft/<版本>/` 共享树、加载器代码收敛到共享 `modloader` 树，三个加载器共用一份源码；本仓库仍是每平台一份拷贝。
+- **工具链升级**：easyMod `[1.2.5, 1.3)`、Kotlin 2.4.0、detekt 2+、Fabric Loader 0.19.2、Forge `merge-source-sets` 等。
+- 本仓库的 Forge / NeoForge 自 2.2.x 起暂停构建（见下方局限说明），原仓库仍为三加载器全量出包。
 
-- **`ece7fa5` / `e077a08` / `592439b` — 2.2.0 / 关闭 SNAPSHOT 后缀 / 2.2.1**
-  - 版本号 2.1.0 → 2.2.0。
-  - `modVersion.release` 设为 `true`，构建产物不再带 `-SNAPSHOT` 后缀。
-  - Turn Priming 的扫描偏移位置由 3 个扩展为 5 个，再精简到 4 个。版本号升到 2.2.1。
+## Comparison with Upstream
 
-- **`a42dee4` — 重写 `smartCenter` 为单格侧向探测**
-  - 探测范围从"前方多格"收敛到"前 1 格 + 前上 1 格"两格；左右各 1 格同样只测前两格。
-  - 仅一侧空 → 沿该方向横移 ±0.2。
-  - 两侧都空或都堵 → 退回用船在格内的位置 + 船头偏航做兜底决策。
-  - 决定横移时直接基于船当前位置移动，不再先对到车道中心。
+This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/CodeF53/CardinalIceBoats); the common ancestor is `50448ac` (upstream's v2.1.0, released 2026-05-31). Since then the two lines evolved independently: this repository continues as the 2.2.x series (multi-version support and Smart Center polish), while upstream moved to MC 26.2 / 26.3 and the libIPN config system, and on 2026-09-27 released a new version re-pointing the `v2.1.0` tag at a new commit. Version numbers are therefore not comparable across the two repos — judge by content (this repo is currently 2.2.3, based on upstream's first v2.1.0).
 
-- **`08a069a` — 版本号 2.2.2（snapshot 模式）**
-  - `modVersion.release` 改为 `false`，`changelog.md` 同步新增 2.2.2 条目。
+### This repo only (not in upstream)
 
-- **`36313b7`（fix on top of `08a069a`）— 修复 `smartCenter` 两个 bug**
-  - 原算法作为兜底：当新算法决定无横移，或前方两格均无碰撞时，回落到原有多格对中逻辑（`calculateNudge` 已被恢复）。
-  - 横移应用改为向量形式 `boat.pos + nudge * (-lx, -lz)`，保证 EAST / WEST 朝向时方向也正确（原实现里 EAST/WEST 写成了沿 z 加减，方向反了）。
-  - 兜底分支中"船在格内偏左/偏右"的符号也修正：左侧 → `nudge = -0.2`，右侧 → `+0.2`。
+- **Multi-version support**: Fabric builds for MC 1.19.2 / 1.20.1 / 1.21.1 / 1.21.10 / 1.21.11 / 26.1.2, with shared code split into `shared-26` (Mojang mappings) and `shared-pre26` (Yarn mappings). Upstream has dropped everything below 26.x.
+- **Rewritten Smart Center**: single-block lateral probe plus a landing-side ice/water check (never pushes the boat off its lane), with the original multi-block centering kept as a fallback; fixes two bugs — the EAST / WEST nudge axis and the in-block offset sign.
+- **Smart Center on Re-Snap** (`smartCenterOnSnap` option); the three keybinds no longer require the boat to be on ice.
+- **Tag-based ice/water detection**: ice = `#minecraft:ice`, water = `#minecraft:water` fluid state (includes waterlogged blocks), replacing the regex-over-block-name matching; the two predicates are separate.
+- **Persistent primed-turn indicator**: ◀◀ / ▶▶ shown above the hotbar while a turn is pending (gated by "Show Status Messages").
+- **Regression fixes**: "keep moving after chat closes" only worked once per session on 26.1.2 (timer never reset); player null guards added to `ChatMoveLie` / `ChatMoveStartLying`.
+- `calculateNudge` uses collision shapes (`getCollisionShape().isEmpty`) for wall detection, so non-collidable blocks (rails, torches, …) are no longer treated as walls.
+- Shared code is single-sourced: platforms reference `shared-26` / `shared-pre26` via `sourceSets`, replacing hand-copied per-platform trees.
+- Added JUnit unit tests (`roundYRot` / `isCardinallyAligned` / the `dodgeNudge` decision table) and a `zh_cn.json` language file.
+- The `doChatShit` option was renamed to `showStatusMessages`; `Always Smart Center` uses a 0.5° tolerance instead of exact float comparison.
 
-## Recent changes (commits from `7766b45` up to current HEAD, inclusive)
+### Upstream ahead (not yet synced here)
 
-ZH / EN — covers everything from `7766b45 fix: use collision shape instead of air check in calculateNudge, restore multi-version build` through this repository's current HEAD.
-
-- **Latest commit — second polish pass (see git log for details)**
-  - Ice/water detection now uses vanilla tags: ice = `#minecraft:ice`, water = fluid state of `#minecraft:water` (includes waterlogged blocks). The regex-over-block-name matching is gone.
-  - Smart Center's lateral dodge now validates the landing side: if the target cell has no ice (one block below the boat) or water (level with the boat), it is treated like a wall so the boat is never pushed off the lane.
-  - `Always Smart Center` uses a 0.5° tolerance instead of an exact float comparison.
-  - Primed turns now show a persistent ◀◀ / ▶▶ indicator above the hotbar while a turn is pending (gated by "Show Status Messages").
-  - Fixed a regression on 26.1.2 where "keep moving after chat closes" only worked the first time per session (timer was never reset).
-  - `ChatMoveLie` / `ChatMoveStartLying` gained player null guards; Re-Snap's velocity handling now follows the "Maintain Velocity on Turns" config like every other action.
-  - Shared code is single-sourced: platforms reference `shared-26` / `shared-pre26` via `sourceSets`, and the hand-copied per-platform `src/shared` trees are deleted.
-  - Added JUnit unit tests (`roundYRot` / `isCardinallyAligned` / the `dodgeNudge` decision table) and a `zh_cn.json` language file.
-  - The `doChatShit` option was renamed to `showStatusMessages` (existing config files fall back to the default; set it again once).
-
-- **`7766b45` — fix detection method & restore the multi-version build**
-  - `calculateNudge` now uses `getCollisionShape().isEmpty` instead of `!is AirBlock`, so non-collidable blocks (rails, torches, …) are no longer treated as walls.
-  - Restore Fabric platform modules for MC 1.19.2 – 1.21.11; split shared code into `shared-26` (Mojang mappings) and `shared-pre26` (Yarn mappings).
-  - Bump Gradle Wrapper to 9.5.1 and foojay-resolver to `1.+`.
-
-- **`ba4a319` — Smart Center on Re-Snap; keybinds no longer require ice; separate ice/water detection**
-  - After a Manual Snap (Re-Snap), Smart Center now runs automatically (configurable).
-  - The three keybinds no longer require the boat to be on ice.
-  - Ice and water detection are now separate predicates.
-
-- **`2d26ad7` — 1.19.3+ compatibility: use `passengerList.firstOrNull()` instead of `primaryPassenger`**
-
-- **`ece7fa5` / `e077a08` / `592439b` — 2.2.0 / disable SNAPSHOT suffix / 2.2.1**
-  - Bump version 2.1.0 → 2.2.0.
-  - Set `modVersion.release = true`; built artifacts no longer carry a `-SNAPSHOT` suffix.
-  - Turn Priming's lateral scan offsets grow from 3 to 5 positions, then are trimmed back to 4. Version bumped to 2.2.1.
-
-- **`a42dee4` — rewrite `smartCenter` to a single-block lateral probe**
-  - The probe shrinks from "many blocks ahead" to just "front block + front-upper block"; the two side lanes are probed the same way.
-  - If only one side is open → nudge that way by `±0.2`.
-  - If both sides are open or both are blocked → fall back to in-block position and bow drift.
-  - When a nudge is decided, the boat is moved from its current position; the lane-center snap is skipped.
-
-- **`08a069a` — version 2.2.2 (snapshot mode)**
-  - Set `modVersion.release = false`; add a `2.2.2` entry in `changelog.md`.
-
-- **`36313b7` (fix on top of `08a069a`) — fix two `smartCenter` bugs**
-  - The original multi-block centering logic is restored as a fallback: runs when the new dodge decides "no nudge", or when the front two blocks are clear.
-  - The nudge is now applied as a vector — `boat.pos + nudge * (-lx, -lz)` — so EAST / WEST facings no longer get the wrong axis. (`calculateNudge` is back.)
-  - Sign of the "in-block offset" fallback is fixed: sitting on the left side now maps to `nudge = -0.2`, sitting on the right to `+0.2`.
+- **MC 26.2 / 26.3 support**: nine platform modules (Fabric / Forge / NeoForge × 26.1.2 / 26.2 / 26.3), with Forge 26.x builds re-enabled. The 26.2+ adaptation points: the chat-open injection moved from `Minecraft.handleKeybinds` to `Gui.openChatScreen`; `InputConstants.Type.KEYSYM` was renamed to `KEYBOARD`; `KeyMapping.Category` needs lazy registration (a per-version `Aliases.kt` shim was added).
+- **Config system migration**: Cloth Config → libIPN (required dependency `[6.9.0, 6.10)`, config stored in `main-config.json`); the ModMenu integration now uses libIPN's `ConfigScreenBase`; `eightWaySnapKey` became an enum (Eight-Way / Four-Way); Cloth Config and server-side installation are no longer supported, and Kotlin for Forge is no longer needed. This repo is still on Cloth Config.
+- **Source-tree restructure**: per-MC-version mixins consolidated into `platforms/shared/minecraft/<version>/` trees and loader code into shared `modloader` trees, so all three loaders build from one copy per version; this repo still keeps one copy per platform.
+- **Toolchain bumps**: easyMod `[1.2.5, 1.3)`, Kotlin 2.4.0, detekt 2+, Fabric Loader 0.19.2, Forge `merge-source-sets`, etc.
+- Forge / NeoForge builds are on hold in this repo since 2.2.x (see limitations below), while upstream still ships all three loaders.
 
 ## 局限、风险与和原版的差异 (Limitations, Risks & Vanilla Differences)
 
