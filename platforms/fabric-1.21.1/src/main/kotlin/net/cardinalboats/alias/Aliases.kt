@@ -12,6 +12,8 @@ import net.minecraft.entity.vehicle.BoatEntity
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 import net.minecraft.block.BlockState
+import net.minecraft.registry.tag.BlockTags
+import net.minecraft.registry.tag.FluidTags
 import net.minecraft.util.math.Direction
 import net.minecraft.util.math.MathHelper
 import net.minecraft.world.World
@@ -56,3 +58,7 @@ const val KEY_BINDING_CATEGORY = "key.category.cardinalboats.binding_category"
 fun translatable(value: String) = Text.translatable(value)
 
 fun makeText(value: String) = Text.literal(value)
+
+fun BlockState.isInIceTag(): Boolean = isIn(BlockTags.ICE)
+
+fun BlockState.hasWaterFluid(): Boolean = fluidState.isIn(FluidTags.WATER)

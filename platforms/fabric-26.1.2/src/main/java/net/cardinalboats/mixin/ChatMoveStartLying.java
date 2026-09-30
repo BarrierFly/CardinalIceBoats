@@ -21,7 +21,7 @@ public abstract class ChatMoveStartLying {
     @Inject(method = "handleKeybinds", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;openChatScreen(Lnet/minecraft/client/gui/components/ChatComponent$ChatMethod;)V"))
     void moveChatBoi(CallbackInfo ci) {
         // on opening the chat
-        assert this.player != null;
+        if (this.player == null) return;
 
         if (player.getVehicle() instanceof AbstractBoat && CIBConfig.getInstance().moveWhileChatting) {
             // if the player is holding W

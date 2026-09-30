@@ -1,0 +1,56 @@
+{
+    "key.category.cardinalboats.binding_category":                                  "Cardinal Ice Boats（方位冰船）",
+
+    "key.cardinalboats.snapManual":                                                 "重新对齐",
+    "key.cardinalboats.snap180":                                                    "立即掉头",
+    "key.cardinalboats.smartCenter":                                                "智能居中",
+
+    "key.cardinalboats.prime_left":                                                 "预约左转",
+    "key.cardinalboats.prime_right":                                                "预约右转",
+
+    "info.cardinalboats.left_turn_queue":                                           "已预约左转",
+    "info.cardinalboats.right_turn_queue":                                          "已预约右转",
+
+    "info.cardinalboats.left_turn_pending":                                         "◀◀ 左转待执行 ◀◀",
+    "info.cardinalboats.right_turn_pending":                                        "▶▶ 右转待执行 ▶▶",
+
+    "info.cardinalboats.left_turn_complete":                                        "左转完成",
+    "info.cardinalboats.right_turn_complete":                                       "右转完成",
+
+    "info.cardinalboats.cancel":                                                    "已取消预约的转向：玩家离开了船。",
+
+    "text.autoconfig.CardinalBoat.option.showStatusMessages":                       "显示状态消息",
+    "text.autoconfig.CardinalBoat.option.showStatusMessages.@Tooltip":              "在快捷栏上方显示转向的预约、待执行、完成与取消消息。",
+
+    "text.autoconfig.CardinalBoat.option.maintainVelocityOnTurns":                  "转向时保持速度",
+    "text.autoconfig.CardinalBoat.option.maintainVelocityOnTurns.@Tooltip":         "预约转向、立即掉头和重新对齐时保持前进速度。\n在高延迟服务器上可能表现不佳。\n非常强力：部分服务器会视作作弊并封禁。",
+
+    "text.autoconfig.CardinalBoat.option.eightWaySnapKey":                          "对齐键的角度粒度",
+    "text.autoconfig.CardinalBoat.option.eightWaySnapKey.@Tooltip":                 "§b八向§r - 按对齐键将船对齐到最近的 45°\n§6四向§r - 按对齐键将船对齐到最近的 90°",
+    "text.autoconfig.CardinalBoat.option.eightWaySnapKey.boolean.true":             "§b八向",
+    "text.autoconfig.CardinalBoat.option.eightWaySnapKey.boolean.false":            "§6四向",
+
+    "text.autoconfig.CardinalBoat.option.smartCenterOnSnap":                        "重新对齐时智能居中",
+    "text.autoconfig.CardinalBoat.option.smartCenterOnSnap.@Tooltip":               "按下重新对齐键后，同时让船在车道内智能居中。",
+
+    "text.autoconfig.CardinalBoat.option.alwaysSmartCenter":                        "持续智能居中",
+    "text.autoconfig.CardinalBoat.option.alwaysSmartCenter.@Tooltip":               "只要船头基本对齐基本方位（误差小于 0.5°），就持续执行智能居中。",
+
+    "text.autoconfig.CardinalBoat.option.smartCenterLookAhead":                     "智能居中探测距离",
+    "text.autoconfig.CardinalBoat.option.smartCenterLookAhead.@Tooltip":            "智能居中向前扫描墙体的方块数量。",
+
+    "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurn":                    "预约转向后智能居中",
+    "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurn.@Tooltip":           "完成预约转向后，船会自动再次智能居中。",
+
+    "text.autoconfig.CardinalBoat.option.moveWhileChatting":                        "聊天时继续开船",
+    "text.autoconfig.CardinalBoat.option.moveWhileChatting.@Tooltip":               "驾驶船时可以打开聊天。\n如果在前进中打开聊天，船会继续保持前进。\n§m别边聊天边开车。",
+
+    "text.autoconfig.CardinalBoat.option.ticksToMoveAfterChatHides":                "聊天关闭后继续前进时长",
+    "text.autoconfig.CardinalBoat.option.ticksToMoveAfterChatHides.@Tooltip":       "关闭聊天后船继续前进的 tick 数，留出时间重新按住 W。\n20 tick = 1 秒。",
+
+    "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurnDelayTicks":          "转向后智能居中延迟",
+    "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurnDelayTicks.@Tooltip": "启用“预约转向后智能居中”时，将延迟这么多 tick 再执行，\n以便更准确地计算船的位置。\n20 tick = 1 秒。",
+
+
+    "text.autoconfig.CardinalBoat.title":                                           "Cardinal Ice Boats 设置"
+}

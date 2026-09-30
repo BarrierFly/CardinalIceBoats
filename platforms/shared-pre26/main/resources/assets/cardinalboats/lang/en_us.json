@@ -11,16 +11,19 @@
     "info.cardinalboats.left_turn_queue":                                           "Left Turn Primed",
     "info.cardinalboats.right_turn_queue":                                          "Right Turn Primed",
 
+    "info.cardinalboats.left_turn_pending":                                         "◀◀ Left Turn Pending ◀◀",
+    "info.cardinalboats.right_turn_pending":                                        "▶▶ Right Turn Pending ▶▶",
+
     "info.cardinalboats.left_turn_complete":                                        "Left Turn Completed",
     "info.cardinalboats.right_turn_complete":                                       "Right Turn Completed",
 
     "info.cardinalboats.cancel":                                                    "Primed turn cancelled. Player left boat.",
 
-    "text.autoconfig.CardinalBoat.option.doChatShit":                               "Print primed turn logs to chat",
-    "text.autoconfig.CardinalBoat.option.doChatShit.@Tooltip":                      "Prints primed, completed, and cancelled messages to the chat.",
+    "text.autoconfig.CardinalBoat.option.showStatusMessages":                       "Show Status Messages",
+    "text.autoconfig.CardinalBoat.option.showStatusMessages.@Tooltip":              "Shows primed, pending, completed, and cancelled turn messages above the hotbar.",
 
-    "text.autoconfig.CardinalBoat.option.maintainVelocityOnTurns":                  "Maintain Velocity on Primed Turns",
-    "text.autoconfig.CardinalBoat.option.maintainVelocityOnTurns.@Tooltip":         "Maintains forward velocity on Primed Turns, similar to the snap key.\nMay not work well on laggy servers.\n§4OP as f§ku§r§4ck, may get you banned.",
+    "text.autoconfig.CardinalBoat.option.maintainVelocityOnTurns":                  "Maintain Velocity on Turns",
+    "text.autoconfig.CardinalBoat.option.maintainVelocityOnTurns.@Tooltip":         "Maintains forward velocity on Primed Turns, Instant Reverse and Re-Snap.\nMay not work well on laggy servers.\nVery powerful - some servers treat this as cheating and may ban you.",
 
     "text.autoconfig.CardinalBoat.option.eightWaySnapKey":                          "Snap Key Directionality",
     "text.autoconfig.CardinalBoat.option.eightWaySnapKey.@Tooltip":                 "§bEight-Way§r - Pressing Snap Key will align boat to nearest 45°\n§6Four-Way§r - Pressing Snap Key will align boat to nearest 90°",
@@ -31,7 +34,7 @@
     "text.autoconfig.CardinalBoat.option.smartCenterOnSnap.@Tooltip":               "Pressing the Re-Snap key will also smart center the boat in the lane.",
 
     "text.autoconfig.CardinalBoat.option.alwaysSmartCenter":                        "Always Smart Center",
-    "text.autoconfig.CardinalBoat.option.alwaysSmartCenter.@Tooltip":               "Runs smart center all the time when boat is perfectly cardinally aligned",
+    "text.autoconfig.CardinalBoat.option.alwaysSmartCenter.@Tooltip":               "Runs smart center whenever the boat is (almost) perfectly cardinally aligned (within 0.5°)",
 
     "text.autoconfig.CardinalBoat.option.smartCenterLookAhead":                     "Smart Center Lookahead",
     "text.autoconfig.CardinalBoat.option.smartCenterLookAhead.@Tooltip":            "Number of blocks ahead of you that smart center scans for walls.",

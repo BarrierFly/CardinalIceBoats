@@ -20,7 +20,8 @@ public class ChatMoveLie {
     @ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/KeyBinding;isPressed()Z", ordinal = 0))
     private boolean lie(boolean original) {
         if (lieAboutMovingForward) {
-            if (MinecraftClient.getInstance().currentScreen instanceof ChatScreen && MinecraftClient.getInstance().player.getVehicle() instanceof BoatEntity) {
+            if (MinecraftClient.getInstance().currentScreen instanceof ChatScreen && MinecraftClient.getInstance().player != null
+                    && MinecraftClient.getInstance().player.getVehicle() instanceof BoatEntity) {
                 cardinalBoats$timeSinceChatClose = 0;
                 // lie about moving forward
                 return true;

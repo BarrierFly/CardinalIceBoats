@@ -7,6 +7,10 @@ import net.cardinalboats.alias.translatable
 @Suppress("MagicNumber")
 object TurnPriming: TurnPrimingBase {
 
+    // The action bar fades after a couple of seconds, so the pending-turn
+    // indicator is re-sent at this interval to stay visible until the turn fires.
+    private const val PENDING_TURN_NOTICE_INTERVAL_TICKS = 25
+
     private class TickCountingTask(private var ticks: Int? = null,
                                    private var times: Int? = null,
                                    val task: () -> Unit) {
@@ -74,6 +78,7 @@ object TurnPriming: TurnPrimingBase {
 
     private var lTurnPrimed = false
     private var rTurnPrimed = false
+    private var pendingTurnNotice = 0
 
     private val toScanMapLeft = mapOf(
         Direction.SOUTH to arrayOf(intArrayOf(3, 0), intArrayOf(3, -1), intArrayOf(3, 1), intArrayOf(3, -2)),
@@ -120,7 +125,7 @@ object TurnPriming: TurnPrimingBase {
                 lTurnPrimed = false
             }
 
-            if (CIBConfig.getInstance().alwaysSmartCenter && boat.yaw % 90 == 0f) {
+            if (CIBConfig.getInstance().alwaysSmartCenter && isCardinallyAligned(boat.yaw)) {
                 TickCountingTask(task = centerTask).addTask().runNow()
             }
 
@@ -145,6 +150,19 @@ object TurnPriming: TurnPrimingBase {
                     if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask()
                 }.addTask().runNow()
             }
+
+            // Persistent pending-turn arrow: keeps showing which way the boat
+            // will turn while a turn is primed.
+            if (lTurnPrimed || rTurnPrimed) {
+                if (pendingTurnNotice-- <= 0) {
+                    pendingTurnNotice = PENDING_TURN_NOTICE_INTERVAL_TICKS
+                    clientChatLog(player, translatable(
+                        if (lTurnPrimed) "info.cardinalboats.left_turn_pending"
+                        else "info.cardinalboats.right_turn_pending").string)
+                }
+            } else {
+                pendingTurnNotice = 0
+            }
         } else {
             // if we aren't on the boat anymore, we don't care
             if (lTurnPrimed || rTurnPrimed) {
@@ -152,6 +170,7 @@ object TurnPriming: TurnPrimingBase {
             }
             lTurnPrimed = false
             rTurnPrimed = false
+            pendingTurnNotice = 0
 
             // not in a boat, don't care about any presses these buttons get right now
             while (lQueueKey.wasPressed() || rQueueKey.wasPressed() || smartCenterKey.wasPressed()) {}
@@ -208,64 +227,40 @@ object TurnPriming: TurnPrimingBase {
             val pos = BlockPos(rootX + x, rootY + yOff, rootZ + z)
             return !world.getBlockState(pos).getCollisionShape(world, pos).isEmpty
         }
+        // Ice sits one block below the boat; water is level with the boat.
+        fun hasSurfaceAt(x: Int, z: Int): Boolean {
+            return isIce(world.getBlockState(BlockPos(rootX + x, rootY - 1, rootZ + z)))
+                    || isWater(world.getBlockState(BlockPos(rootX + x, rootY, rootZ + z)))
+        }
 
         // Step 1: probe the lane the boat is currently in (front block + front-upper block).
         val frontBlocked = collidesAt(dx, dz, 0) || collidesAt(dx, dz, 1)
 
-        // If a collision is in front, the new single-block lateral dodge runs.
-        // It owns three cases:
-        //   - exactly one side lane is open  -> nudge that way by ±0.2
-        //   - both side lanes are open       -> "both need to dodge" — don't just cancel
-        //                                     the two ±0.2's; pick a side from the boat's
-        //                                     in-block position and, if centered, from the
-        //                                     bow's yaw drift
-        // Any other case (front clear, or front blocked with both side lanes blocked)
-        // falls through to the original multi-block centering logic.
+        // If a collision is in front, the single-block lateral dodge runs; see
+        // dodgeNudge in BoatMath.kt for the decision table. A side lane only
+        // counts as open when it is collision-free AND still has a rideable
+        // surface - a missing surface is treated like a wall so the boat never
+        // dodges off the lane. Whatever the dodge defers (front clear, or both
+        // side lanes blocked) falls through to the multi-block centering logic.
         if (frontBlocked) {
-            val leftBlocked  = collidesAt(dx + lx, dz + lz, 0) || collidesAt(dx + lx, dz + lz, 1)
-            val rightBlocked = collidesAt(dx - lx, dz - lz, 0) || collidesAt(dx - lx, dz - lz, 1)
-
-            // Signed "right step" in {-0.2, 0, +0.2}. Positive means step right, along (-lx, -lz).
-            val nudge: Double = when {
-                !leftBlocked && rightBlocked  -> -0.2  // only left lane is open -> step left
-                !rightBlocked && leftBlocked  ->  0.2  // only right lane is open -> step right
-                !leftBlocked && !rightBlocked -> {
-                    // Both side lanes are open: do NOT cancel the two ±0.2's. Pick from
-                    // the boat's in-block position, and if the boat is centered, from
-                    // the bow's yaw drift.
-                    val centerX = rootX + 0.5
-                    val centerZ = rootZ + 0.5
-                    // sideOffset > 0 means the boat is sitting on the "left" side of the lane.
-                    val sideOffset = (boat.x - centerX) * lx + (boat.z - centerZ) * lz
-                    val centered = kotlin.math.abs(sideOffset) < 0.02
-
-                    if (!centered) {
-                        // Lean toward the side the boat already sits on.
-                        if (sideOffset > 0) -0.2 else 0.2
-                    } else {
-                        // Boat is centered in the lane: pick by bow drift.
-                        val facingYaw = when (direction) {
-                            Direction.SOUTH ->   0f
-                            Direction.WEST  ->  90f
-                            Direction.NORTH -> 180f
-                            Direction.EAST  -> 270f
-                            else -> 0f
-                        }
-                        // Wrap yaw diff into (-180, 180].
-                        var diff = boat.yaw - facingYaw
-                        diff = ((diff + 180f) % 360f + 360f) % 360f - 180f
-                        when {
-                            diff < -0.5f  -> -0.2  // bow points to the left of facing
-                            diff >  0.5f  ->  0.2  // bow points to the right of facing
-                            else          ->  0.2  // bow straight ahead: default to right
-                        }
-                    }
-                }
-                else                          ->  0.0  // both side lanes blocked -> defer
+            fun sideLaneOpen(x: Int, z: Int): Boolean {
+                return !collidesAt(x, z, 0) && !collidesAt(x, z, 1) && hasSurfaceAt(x, z)
             }
 
+            // sideOffset > 0 means the boat sits on the left half of its lane block.
+            val sideOffset = (boat.x - (rootX + 0.5)) * lx + (boat.z - (rootZ + 0.5)) * lz
+            // Wrap the bow's yaw offset from the lane facing into (-180, 180].
+            var yawDiff = boat.yaw - when (direction) {
+                Direction.SOUTH ->  0f
+                Direction.WEST  -> 90f
+                Direction.NORTH -> 180f
+                else            -> 270f // EAST
+            }
+            yawDiff = ((yawDiff + 180f) % 360f + 360f) % 360f - 180f
+
+            val nudge = dodgeNudge(!sideLaneOpen(dx + lx, dz + lz), !sideLaneOpen(dx - lx, dz - lz), sideOffset, yawDiff)
             if (nudge != 0.0) {
-                // Apply nudge as a vector along (-lx, -lz). Same formula works for all 4 facings.
+                // Positive nudge steps right, along (-lx, -lz); same formula for all 4 facings.
                 boat.setPosition(boat.x - nudge * lx,
                                  boat.y,
                                  boat.z - nudge * lz)
@@ -338,4 +333,3 @@ object TurnPriming: TurnPrimingBase {
     }
 
 }
-

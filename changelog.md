@@ -1,6 +1,17 @@
 <!-- latest begin -->
 ### 2.2.2
 
+- Second polish pass (same 2.2.2 snapshot line):
+  * Ice/water detection now uses vanilla tags (`#minecraft:ice` / `#minecraft:water` fluid state) instead of block-name regex.
+  * Smart Center's lateral dodge treats a side lane without ice (one block below) or water (level with the boat) as blocked, so it never nudges the boat off the lane.
+  * Always Smart Center now uses a 0.5° yaw tolerance instead of an exact float comparison.
+  * Primed turns show a persistent ◀◀ / ▶▶ pending indicator above the hotbar.
+  * Fixed a 26.1.2 regression where the keep-moving-after-chat grace period only worked the first time per session.
+  * Player null guards in the chat-move mixins; Re-Snap velocity handling now follows "Maintain Velocity on Turns".
+  * Shared code is single-sourced into `shared-26` / `shared-pre26` (per-platform `src/shared` copies removed).
+  * Added JUnit unit tests and a `zh_cn.json` language file.
+  * Renamed the `doChatShit` option to `showStatusMessages` (old config files fall back to the default).
+
 - Rewrote `smartCenter` to a single-block lateral probe: instead of sweeping
   multiple blocks ahead and snapping the boat back to the lane center, the new
   algorithm inspects only the front block and the front-upper block of the

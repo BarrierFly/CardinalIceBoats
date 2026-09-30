@@ -11,7 +11,7 @@ import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
 @Config(name = "CardinalBoat")
 public class CIBConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip
-    public boolean doChatShit = true;
+    public boolean showStatusMessages = true;
 
     @ConfigEntry.Gui.Tooltip
     public boolean maintainVelocityOnTurns = false;

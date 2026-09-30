@@ -13,6 +13,8 @@ import net.minecraft.entity.vehicle.AbstractBoatEntity
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 import net.minecraft.block.BlockState
+import net.minecraft.registry.tag.BlockTags
+import net.minecraft.registry.tag.FluidTags
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.Direction
 import net.minecraft.util.math.MathHelper
@@ -58,6 +60,10 @@ val KEY_BINDING_CATEGORY = KeyBindingCategory.create(Identifier.of(ModInfo.MOD_I
 fun translatable(value: String) = Text.translatable(value)
 
 fun makeText(value: String) = Text.literal(value)
+
+fun BlockState.isInIceTag(): Boolean = isIn(BlockTags.ICE)
+
+fun BlockState.hasWaterFluid(): Boolean = fluidState.isIn(FluidTags.WATER)
 
 val AbstractBoatEntity.world: World
     get() = this.entityWorld

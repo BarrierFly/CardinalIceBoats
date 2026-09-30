@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import net.minecraft.item.BoatItem;
 
-import static net.cardinalboats.UtilKt.roundYRot;
+import static net.cardinalboats.BoatMathKt.roundYRot;
 import static net.cardinalboats.UtilKt.shouldSnap;
 
 @Mixin(BoatItem.class)

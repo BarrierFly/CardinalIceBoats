@@ -22,7 +22,10 @@ public class ChatMoveLie {
     @ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/KeyMapping;isDown()Z", ordinal = 0))
     private boolean lie(boolean original) {
         if (lieAboutMovingForward) {
-            if (Minecraft.getInstance().screen instanceof ChatScreen && Minecraft.getInstance().player.getVehicle() instanceof AbstractBoat) {
+            if (Minecraft.getInstance().screen instanceof ChatScreen && Minecraft.getInstance().player != null
+                    && Minecraft.getInstance().player.getVehicle() instanceof AbstractBoat) {
+                // chat is open again: restart the grace period for after it closes
+                cardinalBoats$timeSinceChatClose = 0;
                 // lie about moving forward
                 return true;
             } else {

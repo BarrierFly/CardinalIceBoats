@@ -3,21 +3,16 @@ package net.cardinalboats
 import net.cardinalboats.alias.RADIANS_PER_DEGREE
 import net.cardinalboats.config.CIBConfig
 import net.minecraft.network.chat.Component
+import net.minecraft.tags.BlockTags
+import net.minecraft.tags.FluidTags
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.entity.vehicle.boat.AbstractBoat
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.state.BlockState
-import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
-
-import java.util.regex.Pattern
-import kotlin.math.roundToInt
-
-private val icePattern = Pattern.compile("(\\b|_)ice\\b", Pattern.CASE_INSENSITIVE)
-private val waterPattern = Pattern.compile("(\\b|_)water\\b", Pattern.CASE_INSENSITIVE)
 
 
 @JvmField
@@ -51,24 +46,18 @@ fun rotateBoat(boat: AbstractBoat, rotation: Float, maintainVelocity: Boolean, p
 }
 
 fun isIce(blockState: BlockState): Boolean {
-    return icePattern.matcher(blockState.block.toString()).find()
+    return blockState.`is`(BlockTags.ICE)
 }
 
 fun isWater(blockState: BlockState): Boolean {
-    if (waterPattern.matcher(blockState.block.toString()).find()) {
-        return true
-    }
-    // Also treat waterlogged blocks as water
-    if (blockState.hasProperty(BlockStateProperties.WATERLOGGED) && blockState.getValue(BlockStateProperties.WATERLOGGED)) {
-        return true
-    }
-    return false
+    // Waterlogged blocks carry a water fluid state, so they count as water too.
+    return blockState.fluidState.`is`(FluidTags.WATER)
 }
 
 fun clientChatLog(player: Player?, message: String) {
     if (player == null) return
 
-    if (CIBConfig.getInstance().doChatShit) {
+    if (CIBConfig.getInstance().showStatusMessages) {
         player.sendOverlayMessage(Component.literal("[cardinalboats] $message"))
     }
 }
@@ -84,9 +73,3 @@ fun shouldSnap(level: Level, player: Player): Boolean {
     }
     return false
 }
-
-@Suppress("MagicNumber")
-fun roundYRot(yRot: Float, toNearest: Int): Float {
-    return ((yRot % 360 / toNearest).roundToInt() * toNearest).toFloat()
-}
-

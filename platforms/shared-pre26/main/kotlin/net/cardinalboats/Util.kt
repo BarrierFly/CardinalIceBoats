@@ -2,13 +2,6 @@ package net.cardinalboats
 
 import net.cardinalboats.alias.*
 import net.cardinalboats.config.CIBConfig
-import net.minecraft.state.property.Properties
-
-import java.util.regex.Pattern
-import kotlin.math.roundToInt
-
-private val icePattern = Pattern.compile("(\\b|_)ice\\b", Pattern.CASE_INSENSITIVE)
-private val waterPattern = Pattern.compile("(\\b|_)water\\b", Pattern.CASE_INSENSITIVE)
 
 
 @JvmField
@@ -34,24 +27,18 @@ fun rotateBoat(boat: AbstractBoatEntity, rotation: Float, maintainVelocity: Bool
 }
 
 fun isIce(blockState: BlockState): Boolean {
-    return icePattern.matcher(blockState.block.toString()).find()
+    return blockState.isInIceTag()
 }
 
 fun isWater(blockState: BlockState): Boolean {
-    if (waterPattern.matcher(blockState.block.toString()).find()) {
-        return true
-    }
-    // Also treat waterlogged blocks as water
-    if (blockState.contains(Properties.WATERLOGGED) && blockState.get(Properties.WATERLOGGED)) {
-        return true
-    }
-    return false
+    // Waterlogged blocks carry a water fluid state, so they count as water too.
+    return blockState.hasWaterFluid()
 }
 
 fun clientChatLog(player: ClientPlayerEntity?, message: String) {
     if (player == null) return
 
-    if (CIBConfig.getInstance().doChatShit) {
+    if (CIBConfig.getInstance().showStatusMessages) {
         player.sendMessage(makeText("[cardinalboats] $message"), false)
     }
 }
@@ -67,9 +54,3 @@ fun shouldSnap(level: World, player: PlayerEntity): Boolean {
     }
     return false
 }
-
-@Suppress("MagicNumber")
-fun roundYRot(yRot: Float, toNearest: Int): Float {
-    return ((yRot % 360 / toNearest).roundToInt() * toNearest).toFloat()
-}
-
