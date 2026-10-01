@@ -65,6 +65,26 @@ class BoatMathTest {
     }
 
     @Test
+    fun `dodge with both lanes blocked steps toward the recessed wall`() {
+        // Left wall flush with the lane, right wall recessed -> step right into the gap.
+        assertEquals(0.2, dodgeNudge(true, true, sideOffset = 0.0, yawDiff = 0f,
+                                     leftExtendsToEdge = true, rightExtendsToEdge = false))
+        // Right wall flush, left wall recessed -> step left.
+        assertEquals(-0.2, dodgeNudge(true, true, sideOffset = 0.0, yawDiff = 0f,
+                                      leftExtendsToEdge = false, rightExtendsToEdge = true))
+        // Both flush or both recessed -> unchanged: no nudge, multi-block centering decides.
+        assertEquals(0.0, dodgeNudge(true, true, sideOffset = 0.0, yawDiff = 0f,
+                                     leftExtendsToEdge = true, rightExtendsToEdge = true))
+        assertEquals(0.0, dodgeNudge(true, true, sideOffset = 0.0, yawDiff = 0f,
+                                     leftExtendsToEdge = false, rightExtendsToEdge = false))
+        // The edge flags only matter when both lanes are blocked.
+        assertEquals(-0.2, dodgeNudge(false, true, sideOffset = 0.0, yawDiff = 0f,
+                                      leftExtendsToEdge = true, rightExtendsToEdge = true))
+        assertEquals(0.2, dodgeNudge(true, false, sideOffset = 0.0, yawDiff = 0f,
+                                     leftExtendsToEdge = true, rightExtendsToEdge = true))
+    }
+
+    @Test
     fun `dodge leans toward the side the boat sits on when both lanes are open`() {
         assertEquals(-0.2, dodgeNudge(false, false, sideOffset = 0.1, yawDiff = 0f))
         assertEquals(0.2, dodgeNudge(false, false, sideOffset = -0.1, yawDiff = 0f))

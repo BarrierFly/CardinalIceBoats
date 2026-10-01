@@ -244,6 +244,23 @@ object TurnPriming: TurnPrimingBase {
                 return !collidesAt(x, z, 0) && !collidesAt(x, z, 1) && hasSurfaceAt(x, z)
             }
 
+            // True when the collision shape at (x, z) reaches the edge facing the
+            // boat's own lane along the axis of the left step (lx, lz). towardLane
+            // is the sign of the step from that block toward the lane; > 0 means
+            // the shared edge is the shape's max side, < 0 its min side.
+            fun extendsToLaneEdge(x: Int, z: Int, towardLane: Int): Boolean {
+                val axis = if (lx != 0) Direction.Axis.X else Direction.Axis.Z
+                for (yOff in 0..1) {
+                    val pos = BlockPos(rootX + x, rootY + yOff, rootZ + z)
+                    val shape = world.getBlockState(pos).getCollisionShape(world, pos)
+                    if (shape.isEmpty) continue
+                    val reaches = if (towardLane > 0) shape.max(axis) >= 1.0 - 0.01
+                                  else shape.min(axis) <= 0.01
+                    if (reaches) return true
+                }
+                return false
+            }
+
             // sideOffset > 0 means the boat sits on the left half of its lane block.
             val sideOffset = (boat.x - (rootX + 0.5)) * lx + (boat.z - (rootZ + 0.5)) * lz
             // Wrap the bow's yaw offset from the lane facing into (-180, 180].
@@ -255,7 +272,18 @@ object TurnPriming: TurnPrimingBase {
             }
             yawDiff = ((yawDiff + 180f) % 360f + 360f) % 360f - 180f
 
-            val nudge = dodgeNudge(!sideLaneOpen(dx + lx, dz + lz), !sideLaneOpen(dx - lx, dz - lz), sideOffset, yawDiff)
+            val leftBlocked = !sideLaneOpen(dx + lx, dz + lz)
+            val rightBlocked = !sideLaneOpen(dx - lx, dz - lz)
+            val nudge = if (leftBlocked && rightBlocked) {
+                // Both walls block: dodge toward the wall whose collision does NOT
+                // reach the edge it shares with the lane - that side has a gap.
+                // Toward the lane the left block faces (-lx, -lz), the right block (lx, lz).
+                dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff,
+                           extendsToLaneEdge(dx + lx, dz + lz, if (lx != 0) -lx else -lz),
+                           extendsToLaneEdge(dx - lx, dz - lz, if (lx != 0) lx else lz))
+            } else {
+                dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff)
+            }
             if (nudge != 0.0) {
                 // Positive nudge steps right, along (-lx, -lz); same formula for all 4 facings.
                 boat.setPos(boat.x - nudge * lx,

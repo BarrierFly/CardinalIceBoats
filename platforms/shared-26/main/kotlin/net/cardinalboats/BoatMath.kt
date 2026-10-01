@@ -25,10 +25,19 @@ fun isCardinallyAligned(yRot: Float): Boolean {
  * @param rightBlocked the right side lane is not usable (wall, or no ice/water surface)
  * @param sideOffset   signed offset of the boat inside its lane block; > 0 means it sits on the left half
  * @param yawDiff      bow yaw minus lane facing, wrapped into (-180, 180]
+ * @param leftExtendsToEdge  when both lanes are blocked: the left wall's collision reaches the
+ *                           edge it shares with the boat's lane, leaving no gap to slip into on the left
+ * @param rightExtendsToEdge when both lanes are blocked: the right wall's collision reaches the
+ *                           edge it shares with the boat's lane, leaving no gap to slip into on the right
  * @return signed nudge in {-0.2, 0.0, +0.2}; positive means step right, along (-lx, -lz)
  */
 @Suppress("MagicNumber")
-fun dodgeNudge(leftBlocked: Boolean, rightBlocked: Boolean, sideOffset: Double, yawDiff: Float): Double {
+fun dodgeNudge(leftBlocked: Boolean,
+               rightBlocked: Boolean,
+               sideOffset: Double,
+               yawDiff: Float,
+               leftExtendsToEdge: Boolean = false,
+               rightExtendsToEdge: Boolean = false): Double {
     return when {
         !leftBlocked && rightBlocked  -> -0.2  // only the left lane is open -> step left
         !rightBlocked && leftBlocked  ->  0.2  // only the right lane is open -> step right
@@ -41,6 +50,11 @@ fun dodgeNudge(leftBlocked: Boolean, rightBlocked: Boolean, sideOffset: Double, 
             yawDiff >  0.5f         ->  0.2
             else                    ->  0.2
         }
-        else -> 0.0 // both side lanes blocked -> defer to the multi-block centering
+        // Both lanes are blocked: if exactly one wall's collision is flush with
+        // the lane edge, the other wall sits recessed and leaves a gap next to
+        // the lane - step 0.2 toward that side to squeeze past it.
+        leftExtendsToEdge && !rightExtendsToEdge  ->  0.2
+        rightExtendsToEdge && !leftExtendsToEdge  -> -0.2
+        else -> 0.0 // both walls flush or both recessed -> defer to the multi-block centering
     }
 }
