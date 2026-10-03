@@ -2,11 +2,17 @@ package net.cardinalboats.config;
 
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigData;
+import me.shedaniel.autoconfig.ConfigHolder;
 
 
 import me.shedaniel.autoconfig.annotation.Config;
 import me.shedaniel.autoconfig.annotation.ConfigEntry;
 import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.regex.Pattern;
 
 @Config(name = "CardinalBoat")
 public class CIBConfig implements ConfigData {
@@ -45,10 +51,36 @@ public class CIBConfig implements ConfigData {
 
 
     public static void init() {
+        // Peek at the legacy key before AutoConfig loads, then carry it over
+        // after registration (see readLegacyShowStatusMessages).
+        boolean legacyOptOut = readLegacyShowStatusMessages();
         AutoConfig.register(CIBConfig.class, Toml4jConfigSerializer::new);
+        if (legacyOptOut) {
+            ConfigHolder<CIBConfig> holder = AutoConfig.getConfigHolder(CIBConfig.class);
+            holder.getConfig().showStatusMessages = false;
+            holder.save();
+        }
     }
 
     public static CIBConfig getInstance() {
         return AutoConfig.getConfigHolder(CIBConfig.class).getConfig();
+    }
+
+    // Cloth AutoConfig has no key-migration API: on load it silently drops keys
+    // it does not know, so the doChatShit -> showStatusMessages rename (2.2.3)
+    // would reset every existing opt-out on the next save. Read the config file
+    // before AutoConfig touches it and map the old value onto the new field.
+    private static boolean readLegacyShowStatusMessages() {
+        try {
+            Path path = FabricLoader.getInstance().getConfigDir().resolve("CardinalBoat.toml");
+            if (!Files.exists(path)) {
+                return false;
+            }
+            return Pattern.compile("\\bdoChatShit\\s*=\\s*false\\b")
+                    .matcher(Files.readString(path))
+                    .find();
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

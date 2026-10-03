@@ -121,11 +121,15 @@ object TurnPriming: TurnPrimingBase {
                 clientChatLog(player, translatable("info.cardinalboats.left_turn_queue").string)
                 lTurnPrimed = true
                 rTurnPrimed = false
+                // Start the indicator counter at the full interval: the priming
+                // tick already shows the "turn primed" message.
+                pendingTurnNotice = PENDING_TURN_NOTICE_INTERVAL_TICKS
             }
             while (rQueueKey.wasPressed()) {
                 clientChatLog(player, translatable("info.cardinalboats.right_turn_queue").string)
                 rTurnPrimed = true
                 lTurnPrimed = false
+                pendingTurnNotice = PENDING_TURN_NOTICE_INTERVAL_TICKS
             }
 
             if (CIBConfig.getInstance().alwaysSmartCenter && isCardinallyAligned(boat.yaw)) {
@@ -154,10 +158,11 @@ object TurnPriming: TurnPrimingBase {
                 }.addTask().runNow()
             }
 
-            // Persistent pending-turn arrow: keeps showing which way the boat
-            // will turn while a turn is primed.
+            // Persistent pending-turn arrow: re-sent periodically while a turn is
+            // primed so it stays visible after the action bar fades.
             if (lTurnPrimed || rTurnPrimed) {
-                if (pendingTurnNotice-- <= 0) {
+                pendingTurnNotice -= 1
+                if (pendingTurnNotice <= 0) {
                     pendingTurnNotice = PENDING_TURN_NOTICE_INTERVAL_TICKS
                     clientChatLog(player, translatable(
                         if (lTurnPrimed) "info.cardinalboats.left_turn_pending"
@@ -250,12 +255,19 @@ object TurnPriming: TurnPrimingBase {
                 return !collidesAt(x, z, 0) && !collidesAt(x, z, 1) && hasSurfaceAt(x, z)
             }
 
-            // True when the collision shape at (x, z) reaches the edge facing the
-            // boat's own lane along the axis of the left step (lx, lz). towardLane
-            // is the sign of the step from that block toward the lane; > 0 means
-            // the shared edge is the shape's max side, < 0 its min side.
-            fun extendsToLaneEdge(x: Int, z: Int, towardLane: Int): Boolean {
+            // True when the collision shape of the side block at (x, z) - offsets
+            // from the boat's lane block - reaches the edge it shares with the
+            // lane along the axis of the left step (lx, lz), i.e. there is no gap
+            // on that side. A lane can also count as blocked for having no
+            // ice/water; such a lane has no collision shape here and reads as
+            // recessed, which is intended: nudged NUDGE_STEP from the block
+            // centre toward a clear but surfaceless side is safe when the other
+            // side is obstructed.
+            fun extendsToLaneEdge(x: Int, z: Int): Boolean {
                 val axis = if (lx != 0) Direction.Axis.X else Direction.Axis.Z
+                // Stepping from the side block back to the lane negates its offset;
+                // the sign picks which face of the shape is the shared edge.
+                val towardLane = -(if (axis == Direction.Axis.X) x else z)
                 for (yOff in 0..1) {
                     val pos = BlockPos(rootX + x, rootY + yOff, rootZ + z)
                     val shape = world.getBlockState(pos).getCollisionShape(world, pos)
@@ -283,10 +295,11 @@ object TurnPriming: TurnPrimingBase {
             val nudge = if (leftBlocked && rightBlocked) {
                 // Both walls block: dodge toward the wall whose collision does NOT
                 // reach the edge it shares with the lane - that side has a gap.
-                // Toward the lane the left block faces (-lx, -lz), the right block (lx, lz).
+                // The side blocks sit at the left step (lx, lz) from the lane and
+                // its negation.
                 dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff,
-                           extendsToLaneEdge(dx + lx, dz + lz, if (lx != 0) -lx else -lz),
-                           extendsToLaneEdge(dx - lx, dz - lz, if (lx != 0) lx else lz))
+                           extendsToLaneEdge(lx, lz),
+                           extendsToLaneEdge(-lx, -lz))
             } else {
                 dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff)
             }

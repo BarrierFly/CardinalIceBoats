@@ -45,14 +45,10 @@ fun rotateBoat(boat: AbstractBoat, rotation: Float, maintainVelocity: Boolean, p
     postAction()
 }
 
-fun isIce(blockState: BlockState): Boolean {
-    return blockState.`is`(BlockTags.ICE)
-}
+fun isIce(blockState: BlockState) = blockState.`is`(BlockTags.ICE)
 
-fun isWater(blockState: BlockState): Boolean {
-    // Waterlogged blocks carry a water fluid state, so they count as water too.
-    return blockState.fluidState.`is`(FluidTags.WATER)
-}
+// Waterlogged blocks carry a water fluid state, so they count as water too.
+fun isWater(blockState: BlockState) = blockState.fluidState.`is`(FluidTags.WATER)
 
 fun clientChatLog(player: Player?, message: String) {
     if (player == null) return

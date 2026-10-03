@@ -26,20 +26,19 @@ fun rotateBoat(boat: AbstractBoatEntity, rotation: Float, maintainVelocity: Bool
     postAction()
 }
 
-fun isIce(blockState: BlockState): Boolean {
-    return blockState.isInIceTag()
-}
+fun isIce(blockState: BlockState) = blockState.isInIceTag()
 
-fun isWater(blockState: BlockState): Boolean {
-    // Waterlogged blocks carry a water fluid state, so they count as water too.
-    return blockState.hasWaterFluid()
-}
+// Waterlogged blocks carry a water fluid state, so they count as water too.
+fun isWater(blockState: BlockState) = blockState.hasWaterFluid()
 
 fun clientChatLog(player: ClientPlayerEntity?, message: String) {
     if (player == null) return
 
     if (CIBConfig.getInstance().showStatusMessages) {
-        player.sendMessage(makeText("[cardinalboats] $message"), false)
+        // overlay = true puts the text on the action bar above the hotbar, like
+        // the shared-26 copy. Chat (overlay = false) would flood the history
+        // with the periodic pending-turn indicator.
+        player.sendMessage(makeText("[cardinalboats] $message"), true)
     }
 }
 

@@ -8,8 +8,8 @@ repositories {
 
 dependencies {
     implementation ("me.shedaniel.cloth:cloth-config-fabric:$cloth_config_version")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 plugins {
@@ -24,7 +24,8 @@ easyMod {
     }
 }
 
-// Cross-version shared code lives in platforms/shared-26 (Mojang mappings).
+// Cross-version shared code lives in platforms/shared-26 (Mojang mappings), and
+// mapping-independent code in platforms/shared-pure.
 // easymod adds its default source dirs in afterEvaluate, so ours are (re-)added
 // there as well; the per-platform src/shared trees were retired in favour of
 // the shared modules.
@@ -34,17 +35,15 @@ afterEvaluate {
             kotlin.srcDir(rootProject.file("platforms/shared-26/main/kotlin"))
             java.srcDir(rootProject.file("platforms/shared-26/main/java"))
             resources.srcDir(rootProject.file("platforms/shared-26/main/resources"))
+            kotlin.srcDir(rootProject.file("platforms/shared-pure/main/kotlin"))
         }
         test {
-            kotlin.srcDir(rootProject.file("platforms/shared-26/test/kotlin"))
+            kotlin.srcDir(rootProject.file("platforms/shared-pure/test/kotlin"))
         }
     }
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
     }
-}
-
-afterEvaluate {
     modrinth {
         failSilently.set(true)
         if (System.getenv("IPNEXT_RELEASE") != null) {

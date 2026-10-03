@@ -58,6 +58,9 @@ fun translatable(value: String) = Text.translatable(value)
 
 fun makeText(value: String) = Text.literal(value)
 
+// Keep these two tag helpers identical across the pre-26 platform alias files;
+// only the tag import package may differ (net.minecraft.tag before 1.19.3,
+// net.minecraft.registry.tag since).
 fun BlockState.isInIceTag(): Boolean = isIn(BlockTags.ICE)
 
 fun BlockState.hasWaterFluid(): Boolean = fluidState.isIn(FluidTags.WATER)
