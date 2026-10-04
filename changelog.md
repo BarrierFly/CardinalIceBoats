@@ -1,4 +1,15 @@
 <!-- latest begin -->
+### 2.2.4
+
+- Moved the Smart Center "squeeze toward a recessed wall" dodge to the condition it was meant
+  for: the front is clear but both ahead-side lanes are walled, in which case the boat is held
+  0.2 toward the side whose wall does not reach the passage edge (absolute cross-axis snap — it
+  leans into the gap without ever leaving the lane). The flush-edge check now probes the same
+  front-side diagonal blocks that decide whether a side lane is blocked, instead of the blocks
+  directly beside the boat. A collision dead ahead no longer consults the flush-edge check: the
+  boat uses the plain relative dodge toward the open side lane, and a trapped boat with both
+  side lanes walled falls through to the multi-block centering as before.
+
 ### 2.2.3
 
 - Ice/water detection now uses vanilla tags (`#minecraft:ice` / `#minecraft:water` fluid state) instead of block-name regex.
