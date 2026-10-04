@@ -7,15 +7,15 @@
 ### 本仓库独有（原仓库没有）
 
 - **多版本支持**：Fabric 平台覆盖 MC 1.19.2 / 1.20.1 / 1.21.1 / 1.21.10 / 1.21.11 / 26.1.2；共享代码拆成 `shared-26`（Mojang 映射）与 `shared-pre26`（Yarn 映射）。原仓库已放弃 26 以下所有版本。
-- **Smart Center 重写**：单格侧向探测 + 落点冰/水校验（不会把船推出车道），原多格对中逻辑保留为兜底；修复 EAST / WEST 横移轴向与格内偏移符号两处 bug。
+- **Smart Center 重写**：单格侧向探测 + 落点冰/水校验（不会把船推出车道），原多格对中逻辑保留为兜底；两侧都被墙堵住时，若恰好一侧墙的碰撞贴合车道边缘，则向另一侧（留有缝隙的一侧）横移 0.2 挤过去；修复 EAST / WEST 横移轴向与格内偏移符号两处 bug。
 - **Re-Snap 触发 Smart Center**（`smartCenterOnSnap` 配置项）；三个快捷键不再要求"船必须在冰上"。
 - **冰/水识别用原版标签**：冰 = `#minecraft:ice`，水 = 流体状态 `#minecraft:water`（含含水方块），取代按方块名正则匹配，且两者分离判定。
 - **预约转向常驻指示**：转向被预约期间，快捷栏上方持续显示 ◀◀ / ▶▶（受「显示状态消息」开关控制）。
 - **回归修复**：26.1.2 上「关闭聊天后继续前进」每会话只生效一次（计时器未复位）；`ChatMoveLie` / `ChatMoveStartLying` 增加 player 判空。
 - `calculateNudge` 改用碰撞箱（`getCollisionShape().isEmpty`）判墙，铁轨、火把等不参与碰撞的方块不再算墙。
-- 共享代码单源化：各平台经 `sourceSets` 引用 `shared-26` / `shared-pre26`，删除手工拷贝。
+- 共享代码单源化：各平台经 `sourceSets` 引用 `shared-26` / `shared-pre26`，删除手工拷贝；映射无关的纯逻辑（`BoatMath` 及其测试）进一步收敛到 `shared-pure`，六个平台共用一份。
 - 新增 JUnit 单元测试（`roundYRot` / `isCardinallyAligned` / `dodgeNudge` 决策表）与 `zh_cn.json` 语言文件。
-- 配置项 `doChatShit` 更名 `showStatusMessages`；`Always Smart Center` 朝向判断改 0.5° 容差。
+- 配置项 `doChatShit` 更名 `showStatusMessages`（旧配置中的关闭值会自动迁移，无需重新设置）；`Always Smart Center` 朝向判断改 0.5° 容差。
 
 ### 原仓库领先（本仓库尚未同步）
 
@@ -32,15 +32,15 @@ This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/Cod
 ### This repo only (not in upstream)
 
 - **Multi-version support**: Fabric builds for MC 1.19.2 / 1.20.1 / 1.21.1 / 1.21.10 / 1.21.11 / 26.1.2, with shared code split into `shared-26` (Mojang mappings) and `shared-pre26` (Yarn mappings). Upstream has dropped everything below 26.x.
-- **Rewritten Smart Center**: single-block lateral probe plus a landing-side ice/water check (never pushes the boat off its lane), with the original multi-block centering kept as a fallback; fixes two bugs — the EAST / WEST nudge axis and the in-block offset sign.
+- **Rewritten Smart Center**: single-block lateral probe plus a landing-side ice/water check (never pushes the boat off its lane), with the original multi-block centering kept as a fallback; when both side lanes are blocked and exactly one wall's collision is flush with the lane edge, the boat is stepped 0.2 toward the other side, whose recessed wall leaves a gap to squeeze through; fixes two bugs — the EAST / WEST nudge axis and the in-block offset sign.
 - **Smart Center on Re-Snap** (`smartCenterOnSnap` option); the three keybinds no longer require the boat to be on ice.
 - **Tag-based ice/water detection**: ice = `#minecraft:ice`, water = `#minecraft:water` fluid state (includes waterlogged blocks), replacing the regex-over-block-name matching; the two predicates are separate.
 - **Persistent primed-turn indicator**: ◀◀ / ▶▶ shown above the hotbar while a turn is pending (gated by "Show Status Messages").
 - **Regression fixes**: "keep moving after chat closes" only worked once per session on 26.1.2 (timer never reset); player null guards added to `ChatMoveLie` / `ChatMoveStartLying`.
 - `calculateNudge` uses collision shapes (`getCollisionShape().isEmpty`) for wall detection, so non-collidable blocks (rails, torches, …) are no longer treated as walls.
-- Shared code is single-sourced: platforms reference `shared-26` / `shared-pre26` via `sourceSets`, replacing hand-copied per-platform trees.
+- Shared code is single-sourced: platforms reference `shared-26` / `shared-pre26` via `sourceSets`, replacing hand-copied per-platform trees; the mapping-independent logic (`BoatMath` and its tests) additionally converges into `shared-pure`, compiled once for all six platforms.
 - Added JUnit unit tests (`roundYRot` / `isCardinallyAligned` / the `dodgeNudge` decision table) and a `zh_cn.json` language file.
-- The `doChatShit` option was renamed to `showStatusMessages`; `Always Smart Center` uses a 0.5° tolerance instead of exact float comparison.
+- The `doChatShit` option was renamed to `showStatusMessages` (an existing opt-out is migrated automatically — no need to set it again); `Always Smart Center` uses a 0.5° tolerance instead of exact float comparison.
 
 ### Upstream ahead (not yet synced here)
 

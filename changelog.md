@@ -3,13 +3,15 @@
 
 - Ice/water detection now uses vanilla tags (`#minecraft:ice` / `#minecraft:water` fluid state) instead of block-name regex.
 - Smart Center's lateral dodge treats a side lane without ice (one block below) or water (level with the boat) as blocked, so it never nudges the boat off the lane.
+- When both side lanes are blocked and exactly one wall's collision reaches the edge it shares with the boat's lane, Smart Center now steps 0.2 toward the other side, whose wall sits recessed and leaves a gap to squeeze past.
 - Always Smart Center now uses a 0.5° yaw tolerance instead of an exact float comparison.
-- Primed turns show a persistent ◀◀ / ▶▶ pending indicator above the hotbar.
+- Primed turns show a persistent ◀◀ / ▶▶ pending indicator above the hotbar; the indicator no longer overwrites the "turn primed" confirmation on the tick the turn is queued.
+- Status messages are printed to the action bar on every supported version (pre-1.21.11 ports previously wrote to chat, which the periodic indicator would flood).
 - Fixed a 26.1.2 regression where the keep-moving-after-chat grace period only worked the first time per session.
 - Player null guards in the chat-move mixins; Re-Snap velocity handling now follows "Maintain Velocity on Turns".
-- Shared code is single-sourced into `shared-26` / `shared-pre26` (per-platform `src/shared` copies removed).
+- Mapping-independent logic (`BoatMath`, its tests) is single-sourced in a `shared-pure` source dir compiled by every platform; shared code is single-sourced into `shared-26` / `shared-pre26` (per-platform `src/shared` copies removed).
 - Added JUnit unit tests and a `zh_cn.json` language file.
-- Renamed the `doChatShit` option to `showStatusMessages` (old config files fall back to the default).
+- Renamed the `doChatShit` option to `showStatusMessages`; an existing `doChatShit = false` opt-out is carried over automatically.
 
 ### 2.2.2
 
