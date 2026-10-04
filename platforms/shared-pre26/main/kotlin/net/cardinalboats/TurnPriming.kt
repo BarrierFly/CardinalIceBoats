@@ -244,65 +244,57 @@ object TurnPriming: TurnPrimingBase {
         // Step 1: probe the lane the boat is currently in (front block + front-upper block).
         val frontBlocked = collidesAt(dx, dz, 0) || collidesAt(dx, dz, 1)
 
-        // If a collision is in front, the single-block lateral dodge runs; see
-        // dodgeNudge in BoatMath.kt for the decision table. A side lane only
-        // counts as open when it is collision-free AND still has a rideable
-        // surface - a missing surface is treated like a wall so the boat never
-        // dodges off the lane. Whatever the dodge defers (front clear, or both
-        // side lanes blocked) falls through to the multi-block centering logic.
+        // A side lane only counts as open when it is collision-free AND still has
+        // a rideable surface - a missing surface is treated like a wall so the
+        // boat never dodges off the lane. See dodgeNudge in BoatMath.kt for the
+        // decision table.
+        fun sideLaneOpen(x: Int, z: Int): Boolean {
+            return !collidesAt(x, z, 0) && !collidesAt(x, z, 1) && hasSurfaceAt(x, z)
+        }
+
+        // True when the collision shape of the ahead-side block at (x, z) - offsets
+        // from the boat's lane block - reaches the passage edge on its lane-facing
+        // side along the axis of the left step (lx, lz), i.e. there is no gap on
+        // that side. The forward offset vanishes along the left-step axis, so the
+        // derived sign is correct for the diagonals as well. A lane can also count
+        // as blocked for having no ice/water; such a lane has no collision shape
+        // here and reads as recessed, which is intended: snapped NUDGE_STEP from
+        // the block centre toward a clear but surfaceless side is safe when the
+        // other side is obstructed.
+        fun extendsToLaneEdge(x: Int, z: Int): Boolean {
+            val axis = if (lx != 0) Direction.Axis.X else Direction.Axis.Z
+            // Stepping from the side block back to the lane negates its offset;
+            // the sign picks which face of the shape is the shared edge.
+            val towardLane = -(if (axis == Direction.Axis.X) x else z)
+            for (yOff in 0..1) {
+                val pos = BlockPos(rootX + x, rootY + yOff, rootZ + z)
+                val shape = world.getBlockState(pos).getCollisionShape(world, pos)
+                if (shape.isEmpty) continue
+                val reaches = if (towardLane > 0) shape.getMax(axis) >= 1.0 - 0.01
+                              else shape.getMin(axis) <= 0.01
+                if (reaches) return true
+            }
+            return false
+        }
+
+        // sideOffset > 0 means the boat sits on the left half of its lane block.
+        val sideOffset = (boat.x - (rootX + 0.5)) * lx + (boat.z - (rootZ + 0.5)) * lz
+        // Wrap the bow's yaw offset from the lane facing into (-180, 180].
+        var yawDiff = boat.yaw - when (direction) {
+            Direction.SOUTH ->  0f
+            Direction.WEST  -> 90f
+            Direction.NORTH -> 180f
+            else            -> 270f // EAST
+        }
+        yawDiff = ((yawDiff + 180f) % 360f + 360f) % 360f - 180f
+
+        val leftBlocked = !sideLaneOpen(dx + lx, dz + lz)
+        val rightBlocked = !sideLaneOpen(dx - lx, dz - lz)
+
         if (frontBlocked) {
-            fun sideLaneOpen(x: Int, z: Int): Boolean {
-                return !collidesAt(x, z, 0) && !collidesAt(x, z, 1) && hasSurfaceAt(x, z)
-            }
-
-            // True when the collision shape of the side block at (x, z) - offsets
-            // from the boat's lane block - reaches the edge it shares with the
-            // lane along the axis of the left step (lx, lz), i.e. there is no gap
-            // on that side. A lane can also count as blocked for having no
-            // ice/water; such a lane has no collision shape here and reads as
-            // recessed, which is intended: nudged NUDGE_STEP from the block
-            // centre toward a clear but surfaceless side is safe when the other
-            // side is obstructed.
-            fun extendsToLaneEdge(x: Int, z: Int): Boolean {
-                val axis = if (lx != 0) Direction.Axis.X else Direction.Axis.Z
-                // Stepping from the side block back to the lane negates its offset;
-                // the sign picks which face of the shape is the shared edge.
-                val towardLane = -(if (axis == Direction.Axis.X) x else z)
-                for (yOff in 0..1) {
-                    val pos = BlockPos(rootX + x, rootY + yOff, rootZ + z)
-                    val shape = world.getBlockState(pos).getCollisionShape(world, pos)
-                    if (shape.isEmpty) continue
-                    val reaches = if (towardLane > 0) shape.getMax(axis) >= 1.0 - 0.01
-                                  else shape.getMin(axis) <= 0.01
-                    if (reaches) return true
-                }
-                return false
-            }
-
-            // sideOffset > 0 means the boat sits on the left half of its lane block.
-            val sideOffset = (boat.x - (rootX + 0.5)) * lx + (boat.z - (rootZ + 0.5)) * lz
-            // Wrap the bow's yaw offset from the lane facing into (-180, 180].
-            var yawDiff = boat.yaw - when (direction) {
-                Direction.SOUTH ->  0f
-                Direction.WEST  -> 90f
-                Direction.NORTH -> 180f
-                else            -> 270f // EAST
-            }
-            yawDiff = ((yawDiff + 180f) % 360f + 360f) % 360f - 180f
-
-            val leftBlocked = !sideLaneOpen(dx + lx, dz + lz)
-            val rightBlocked = !sideLaneOpen(dx - lx, dz - lz)
-            val nudge = if (leftBlocked && rightBlocked) {
-                // Both walls block: dodge toward the wall whose collision does NOT
-                // reach the edge it shares with the lane - that side has a gap.
-                // The side blocks sit at the left step (lx, lz) from the lane and
-                // its negation.
-                dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff,
-                           extendsToLaneEdge(lx, lz),
-                           extendsToLaneEdge(-lx, -lz))
-            } else {
-                dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff)
-            }
+            // Trapped ahead: the relative lateral dodge steps toward the open side
+            // lane; both side lanes blocked defers to the multi-block centering.
+            val nudge = dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff)
             if (nudge != 0.0) {
                 // Positive nudge steps right, along (-lx, -lz); same formula for all 4 facings.
                 boat.setPosition(boat.x - nudge * lx,
@@ -310,10 +302,35 @@ object TurnPriming: TurnPrimingBase {
                                  boat.z - nudge * lz)
                 return
             }
+        } else if (leftBlocked && rightBlocked) {
+            // Corridor: the front is clear but both ahead-side lanes are walled.
+            // Lean toward the wall whose collision does NOT reach the passage edge
+            // - that side has a gap - via the absolute cross-axis snap, which
+            // holds the boat 0.2 off the block centre toward the gap without ever
+            // leaving its lane. Exactly one flush wall names the other side as the
+            // gap side; both flush or both recessed defers to the multi-block
+            // centering. The probed blocks are the same diagonals that decided
+            // leftBlocked / rightBlocked.
+            val nudge = dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff,
+                                   extendsToLaneEdge(dx + lx, dz + lz),
+                                   extendsToLaneEdge(dx - lx, dz - lz))
+            if (nudge != 0.0) {
+                // Absolute snap of the cross-axis coordinate to the block centre
+                // offset by the nudge along (-lx, -lz); the along-axis coordinate
+                // is kept, matching the multi-block centering below.
+                if (lx != 0) {
+                    boat.setPosition(rootX + 0.5 - nudge * lx, boat.y, boat.z)
+                } else {
+                    boat.setPosition(boat.x, boat.y, rootZ + 0.5 - nudge * lz)
+                }
+                return
+            }
         }
 
-        // Fall through: original multi-block centering logic. Used when the front is clear,
-        // or when the front is blocked but both side lanes are blocked.
+        // Fall through: original multi-block centering logic. Used when the front is
+        // blocked but neither side lane is open, or when the front is clear and the
+        // corridor gap snap does not apply (a side lane is open, or both walls are
+        // flush / both recessed).
         val scanAhead = CIBConfig.getInstance().smartCenterLookAhead
         if (direction == Direction.NORTH || direction == Direction.SOUTH) {
             val startZ = if (direction == Direction.NORTH) -scanAhead else -1
