@@ -49,6 +49,9 @@ public class CIBConfig implements ConfigData {
     @ConfigEntry.BoundedDiscrete(min = 1, max = 50)
     public int smartCenterPrimedTurnDelayTicks = 30;
 
+    @ConfigEntry.Gui.Tooltip
+    public boolean debugSmartCenter = false;
+
 
     public static void init() {
         // Peek at the legacy key before AutoConfig loads, then carry it over

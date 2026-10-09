@@ -30,7 +30,7 @@ object ManualSnap: ManualSnapBase {
                 val snapAngle = if (CIBConfig.getInstance().eightWaySnapKey) 45 else 90
                 rotateBoat(boat, roundYRot(boat.yaw, snapAngle), CIBConfig.getInstance().maintainVelocityOnTurns)
                 if (CIBConfig.getInstance().smartCenterOnSnap) {
-                    TurnPriming.smartCenter(boat)
+                    TurnPriming.smartCenter(boat, "re-snap")
                 }
             }
             while (snap180.wasPressed()) {

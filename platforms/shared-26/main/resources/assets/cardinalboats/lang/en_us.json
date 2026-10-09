@@ -51,6 +51,9 @@
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurnDelayTicks":          "Delay Smart Center after Primed Turn",
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurnDelayTicks.@Tooltip": "If enabled 'Smart Center an Primed Turns' will be done with this delay in ticks.\nThis helps with proper calculations where to move the boat to.\n20 ticks = 1 second.",
 
+    "text.autoconfig.CardinalBoat.option.debugSmartCenter":                        "Debug Smart Center",
+    "text.autoconfig.CardinalBoat.option.debugSmartCenter.@Tooltip":               "Echoes the full smart center decision chain to chat: the front/side lane probes, the measured inputs, which branch was taken (relative dodge, corridor absolute snap, or multi-block sweep) and the resulting offset.\nOnly fires for the Smart Center key, primed turns and Re-Snap - the per-tick 'Always Smart Center' path is not traced.",
+
 
     "text.autoconfig.CardinalBoat.title":                                           "Cardinal Ice Boats Config"
 }

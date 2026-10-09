@@ -16,7 +16,7 @@ object TurnPriming: TurnPrimingBase {
 
     private class TickCountingTask(private var ticks: Int? = null,
                                    private var times: Int? = null,
-                                   val task: () -> Unit) {
+                                   val task: (delayed: Boolean) -> Unit) {
         init {
             if (ticks == null) {
                 ticks = CIBConfig.getInstance().smartCenterPrimedTurnDelayTicks
@@ -29,7 +29,7 @@ object TurnPriming: TurnPrimingBase {
         fun tick(): Boolean {
             ticks = ticks!! - 1
             if (ticks!! <= 0) {
-                task()
+                task(true)
                 times = times!! - 1
                 if (times!! <= 0) {
                     return true
@@ -41,11 +41,40 @@ object TurnPriming: TurnPrimingBase {
         }
 
         fun runNow() {
-            task()
+            task(false)
         }
     }
 
     private val tasks = mutableListOf<TickCountingTask>()
+
+    // Decision-trace echo for debugSmartCenter. Lines accumulate across one
+    // smartCenter call and are flushed to chat as a single multi-line message at
+    // the very end, so the whole decision chain is readable at once instead of
+    // being overwritten by the next overlay line.
+    class CenterTrace(private val source: String) {
+        private val lines = mutableListOf<String>()
+
+        fun line(text: String) {
+            lines.add(text)
+        }
+
+        // Snapshot the values the decision is actually taken on, so a trace can
+        // be read on its own without cross-referencing the source.
+        fun header(direction: String, rootX: Int, rootY: Int, rootZ: Int,
+                   x: Double, y: Double, z: Double, yaw: Float) {
+            lines.add("§7[SmartCenter §f$source§7] §f$direction§7 lane=($rootX,$rootY,$rootZ) pos=(${fmt3(x)},${fmt3(y)},${fmt3(z)}) yaw=${fmt1(yaw)}")
+        }
+
+        fun flush(player: ClientPlayerEntity?) {
+            if (lines.isEmpty()) return
+            clientChatLog(player, lines.joinToString("\n"))
+        }
+
+        companion object {
+            fun fmt3(v: Double): String = String.format("%.3f", v)
+            fun fmt1(v: Float): String = String.format("%.1f", v)
+        }
+    }
 
     private fun TickCountingTask.addTask(): TickCountingTask {
         synchronized(tasks) {
@@ -104,10 +133,15 @@ object TurnPriming: TurnPrimingBase {
         Direction.WEST to arrayOf(intArrayOf(0, 0), intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(2, 0))
     )
 
-    val centerTask = {
-        val boat = MinecraftClient.getInstance().player?.vehicle
-        if (boat != null && boat is AbstractBoatEntity) {
-            smartCenter(boat)
+    // A null source means "do not trace": the alwaysSmartCenter path runs every
+    // tick, and tracing it would flood the chat. The discrete triggers (key press,
+    // primed turn, Re-Snap) pass a label and are echoed when debugSmartCenter is on.
+    val centerTask = { source: String? ->
+        { delayed: Boolean ->
+            val boat = MinecraftClient.getInstance().player?.vehicle
+            if (boat != null && boat is AbstractBoatEntity) {
+                smartCenter(boat, source, delayed)
+            }
         }
     }
 
@@ -133,11 +167,11 @@ object TurnPriming: TurnPrimingBase {
             }
 
             if (CIBConfig.getInstance().alwaysSmartCenter && isCardinallyAligned(boat.yaw)) {
-                TickCountingTask(task = centerTask).addTask().runNow()
+                TickCountingTask(task = centerTask(null)).addTask().runNow()
             }
 
             while (smartCenterKey.wasPressed()) {
-                TickCountingTask(task = centerTask).addTask().runNow()
+                TickCountingTask(task = centerTask("key")).addTask().runNow()
             }
 
             val world = minecraft.world!!
@@ -146,15 +180,15 @@ object TurnPriming: TurnPrimingBase {
                 rotateBoat(boat, roundYRot(boat.yaw - 90, 90), CIBConfig.getInstance().maintainVelocityOnTurns)
                 lTurnPrimed = false
                 clientChatLog(player, translatable("info.cardinalboats.left_turn_complete").string)
-                TickCountingTask {
-                    if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask()
+                TickCountingTask { delayed ->
+                    if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask("primed-turn-left" + if (delayed) "+delayed" else "")(delayed)
                 }.addTask().runNow()
             } else if (rTurnPrimed && shouldTurn(boat, world, false)) {
                 rotateBoat(boat, roundYRot(boat.yaw + 90, 90), CIBConfig.getInstance().maintainVelocityOnTurns)
                 rTurnPrimed = false
                 clientChatLog(player, translatable("info.cardinalboats.right_turn_complete").string)
-                TickCountingTask {
-                    if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask()
+                TickCountingTask { delayed ->
+                    if (CIBConfig.getInstance().smartCenterPrimedTurn) centerTask("primed-turn-right" + if (delayed) "+delayed" else "")(delayed)
                 }.addTask().runNow()
             }
 
@@ -215,12 +249,19 @@ object TurnPriming: TurnPrimingBase {
         return false
     }
 
-    fun smartCenter(boat: AbstractBoatEntity) {
+    // source labels the trigger for the debug echo; null means "no trace".
+    // delayed is true on the TickCountingTask pass that runs after the primed-turn
+    // delay instead of immediately.
+    fun smartCenter(boat: AbstractBoatEntity, source: String? = null, delayed: Boolean = false) {
         val world = boat.world
         val direction = boat.horizontalFacing
         val rootX = boat.blockX
         val rootY = boat.blockY
         val rootZ = boat.blockZ
+
+        val tracing = source != null && CIBConfig.getInstance().debugSmartCenter
+        val trace = if (tracing) CenterTrace(source!!) else null
+        trace?.header(direction.name, rootX, rootY, rootZ, boat.x, boat.y, boat.z, boat.yaw)
 
         // Forward step (dx, dz) and perpendicular "left" step (lx, lz) for the boat's facing.
         // The "right" step is the negation of "left".
@@ -242,14 +283,21 @@ object TurnPriming: TurnPrimingBase {
         }
 
         // Step 1: probe the lane the boat is currently in (front block + front-upper block).
-        val frontBlocked = collidesAt(dx, dz, 0) || collidesAt(dx, dz, 1)
+        val frontLow = collidesAt(dx, dz, 0)
+        val frontHigh = collidesAt(dx, dz, 1)
+        val frontBlocked = frontLow || frontHigh
+        trace?.line("§7front probe §f($dx,$dz)§7 low=$frontLow high=$frontHigh §8->§7 frontBlocked=§f$frontBlocked")
 
         // A side lane only counts as open when it is collision-free AND still has
         // a rideable surface - a missing surface is treated like a wall so the
         // boat never dodges off the lane. See dodgeNudge in BoatMath.kt for the
         // decision table.
         fun sideLaneOpen(x: Int, z: Int): Boolean {
-            return !collidesAt(x, z, 0) && !collidesAt(x, z, 1) && hasSurfaceAt(x, z)
+            val clear = !collidesAt(x, z, 0) && !collidesAt(x, z, 1)
+            val surface = hasSurfaceAt(x, z)
+            val open = clear && surface
+            trace?.line("§7side lane §f($x,$z)§7 clear=$clear surface=$surface §8->§7 open=§f$open")
+            return open
         }
 
         // True when the collision shape of the ahead-side block at (x, z) - offsets
@@ -288,21 +336,32 @@ object TurnPriming: TurnPrimingBase {
         }
         yawDiff = ((yawDiff + 180f) % 360f + 360f) % 360f - 180f
 
+        trace?.line("§7inputs §fsideOffset=${CenterTrace.fmt3(sideOffset)}§7 (>=0.02 counts as off-centre) yawDiff=§f${CenterTrace.fmt1(yawDiff)}§7°")
+
         val leftBlocked = !sideLaneOpen(dx + lx, dz + lz)
         val rightBlocked = !sideLaneOpen(dx - lx, dz - lz)
+        trace?.line("§7lanes §fleftBlocked=$leftBlocked rightBlocked=$rightBlocked")
 
         if (frontBlocked) {
+            trace?.line("§7branch §fFRONT_BLOCKED§7 -> relative lateral dodge")
             // Trapped ahead: the relative lateral dodge steps toward the open side
             // lane; both side lanes blocked defers to the multi-block centering.
             val nudge = dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff)
+            trace?.line("§7dodgeNudge(no edge flags) §8->§7 nudge=§f${CenterTrace.fmt3(nudge)}")
             if (nudge != 0.0) {
                 // Positive nudge steps right, along (-lx, -lz); same formula for all 4 facings.
-                boat.setPosition(boat.x - nudge * lx,
+                val nx = boat.x - nudge * lx
+                val nz = boat.z - nudge * lz
+                boat.setPosition(nx,
                                  boat.y,
-                                 boat.z - nudge * lz)
+                                 nz)
+                trace?.line("§7result §fRELATIVE§7 offset=§f$nudge§7 along §f(-$lx,-$lz)§7 §8->§7 (${CenterTrace.fmt3(nx)}, ${boat.y}, ${CenterTrace.fmt3(nz)})")
+                trace?.flush(MinecraftClient.getInstance().player)
                 return
             }
+            trace?.line("§8nudge is 0, both side lanes unusable - falling through to multi-block sweep")
         } else if (leftBlocked && rightBlocked) {
+            trace?.line("§7branch §fCORRIDOR§7 -> absolute cross-axis snap toward the gap")
             // Corridor: the front is clear but both ahead-side lanes are walled.
             // Lean toward the wall whose collision does NOT reach the passage edge
             // - that side has a gap - via the absolute cross-axis snap, which
@@ -311,20 +370,32 @@ object TurnPriming: TurnPrimingBase {
             // gap side; both flush or both recessed defers to the multi-block
             // centering. The probed blocks are the same diagonals that decided
             // leftBlocked / rightBlocked.
+            val leftEdge = extendsToLaneEdge(dx + lx, dz + lz)
+            val rightEdge = extendsToLaneEdge(dx - lx, dz - lz)
+            trace?.line("§7flush-edge §fleftExtendsToEdge=$leftEdge rightExtendsToEdge=$rightEdge§7 (exactly one true -> gap is on the other side)")
             val nudge = dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff,
-                                   extendsToLaneEdge(dx + lx, dz + lz),
-                                   extendsToLaneEdge(dx - lx, dz - lz))
+                                   leftEdge,
+                                   rightEdge)
+            trace?.line("§7dodgeNudge(with edge flags) §8->§7 nudge=§f${CenterTrace.fmt3(nudge)}")
             if (nudge != 0.0) {
                 // Absolute snap of the cross-axis coordinate to the block centre
                 // offset by the nudge along (-lx, -lz); the along-axis coordinate
                 // is kept, matching the multi-block centering below.
                 if (lx != 0) {
-                    boat.setPosition(rootX + 0.5 - nudge * lx, boat.y, boat.z)
+                    val nx = rootX + 0.5 - nudge * lx
+                    boat.setPosition(nx, boat.y, boat.z)
+                    trace?.line("§7result §fABSOLUTE§7 cross-axis X §8->§7 base=${rootX}.5 + (${CenterTrace.fmt3(nudge)} * -$lx) = §f${CenterTrace.fmt3(nx)}§7, Z kept=${CenterTrace.fmt3(boat.z)}")
                 } else {
-                    boat.setPosition(boat.x, boat.y, rootZ + 0.5 - nudge * lz)
+                    val nz = rootZ + 0.5 - nudge * lz
+                    boat.setPosition(boat.x, boat.y, nz)
+                    trace?.line("§7result §fABSOLUTE§7 cross-axis Z §8->§7 base=${rootZ}.5 + (${CenterTrace.fmt3(nudge)} * -$lz) = §f${CenterTrace.fmt3(nz)}§7, X kept=${CenterTrace.fmt3(boat.x)}")
                 }
+                trace?.flush(MinecraftClient.getInstance().player)
                 return
             }
+            trace?.line("§8nudge is 0, both walls flush or both recessed - falling through to multi-block sweep")
+        } else {
+            trace?.line("§7branch §fFALLBACK§7 front clear and at least one side lane open - multi-block sweep")
         }
 
         // Fall through: original multi-block centering logic. Used when the front is
@@ -346,7 +417,9 @@ object TurnPriming: TurnPrimingBase {
                                         }
             )
             //logger.info("NS setting boat pos to x: ${rootX + 0.5 + nudgeX}, y: ${boat.y}, z: ${boat.z}")
-            boat.setPosition(rootX + 0.5 + nudgeX, boat.y, boat.z)
+            val nx = rootX + 0.5 + nudgeX
+            trace?.line("§7result §fMULTIBLOCK-ABSOLUTE§7 scanAhead=$scanAhead window=$startZ..$endZ Z-side ±1 X-sweep, raw clamped to ±0.2 nudge=§f${CenterTrace.fmt3(nudgeX)}§8->§7 X=§f${CenterTrace.fmt3(nx)}§7, Z kept=${CenterTrace.fmt3(boat.z)}")
+            boat.setPosition(nx, boat.y, boat.z)
         } else {
             val startX = if (direction == Direction.WEST) -scanAhead else -1
             val endX = if (direction == Direction.WEST) 1 else scanAhead
@@ -361,8 +434,11 @@ object TurnPriming: TurnPrimingBase {
                                         }
             )
             //logger.info("setting boat pos to x: ${boat.x}, y: ${boat.x}, z: ${rootZ + 0.5 + nudgeZ}")
-            boat.setPosition(boat.x, boat.y, rootZ + 0.5 + nudgeZ)
+            val nz = rootZ + 0.5 + nudgeZ
+            trace?.line("§7result §fMULTIBLOCK-ABSOLUTE§7 scanAhead=$scanAhead window=$startX..$endX Z-side ±1 X-sweep, raw clamped to ±0.2 nudge=§f${CenterTrace.fmt3(nudgeZ)}§8->§7 Z=§f${CenterTrace.fmt3(nz)}§7, X kept=${CenterTrace.fmt3(boat.x)}")
+            boat.setPosition(boat.x, boat.y, nz)
         }
+        trace?.flush(MinecraftClient.getInstance().player)
     }
 
     private fun calculateNudge(world: World,

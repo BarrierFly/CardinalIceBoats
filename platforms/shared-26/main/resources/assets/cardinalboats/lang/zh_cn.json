@@ -51,6 +51,9 @@
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurnDelayTicks":          "转向后智能居中延迟",
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurnDelayTicks.@Tooltip": "启用“预约转向后智能居中”时，将延迟这么多 tick 再执行，\n以便更准确地计算船的位置。\n20 tick = 1 秒。",
 
+    "text.autoconfig.CardinalBoat.option.debugSmartCenter":                        "智能居中调试回显",
+    "text.autoconfig.CardinalBoat.option.debugSmartCenter.@Tooltip":               "在聊天栏回显智能居中的完整决策过程：前方与侧向车道探针结果、参与判断的实测输入、命中的分支（相对避让／走廊绝对吸附／多块扫描兜底），以及最终算出的偏移。\n仅对智能居中键、预约转向与重新对齐生效；每 tick 运行的“持续智能居中”不回显。",
+
 
     "text.autoconfig.CardinalBoat.title":                                           "Cardinal Ice Boats 设置"
 }
