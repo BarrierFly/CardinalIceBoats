@@ -1,12 +1,12 @@
 <!-- latest begin -->
 ### 2.2.5
 
-- Added a "Debug Smart Center" option that echoes Smart Center's full decision chain to the chat:
-  the front and side lane probes, the measured inputs (in-block offset and bow drift), which branch
-  was taken (relative dodge, corridor absolute snap, or the multi-block sweep fallback), and the
-  resulting offset with the resulting position. The trace is emitted as one multi-line message per
-  call so the whole chain stays readable. It fires for the Smart Center key, primed turns and
-  Re-Snap; the per-tick "Always Smart Center" path is not traced, since it would flood the chat.
+- Added a "Debug Smart Center" option that echoes Smart Center's decision to the chat as a few
+  short lines: whether the front is blocked ("前堵" / "前通"), whether the left and right lanes are
+  open, which branch was taken (relative dodge, corridor gap snap, or the multi-block sweep), and
+  the resulting offset and position. The whole trace is emitted as one multi-line message per call
+  so it stays readable at once. It fires for the Smart Center key, primed turns and Re-Snap; the
+  per-tick "Always Smart Center" path is not traced, since it would flood the chat.
 
 ### 2.2.4
 
