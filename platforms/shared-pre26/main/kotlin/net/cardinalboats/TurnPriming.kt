@@ -343,7 +343,10 @@ object TurnPriming: TurnPrimingBase {
 
         val leftBlocked = !sideLaneOpen(dx + lx, dz + lz)
         val rightBlocked = !sideLaneOpen(dx - lx, dz - lz)
-        trace?.step("左${if (leftBlocked) "堵" else "通"} 右${if (rightBlocked) "堵" else "通"}")
+        // The nudge's sign is mirrored (negative = player-right): positive steps
+        // along (-lx, -lz) with lx being the code-left (= player-right) axis, so
+        // positive is the player's LEFT.
+        trace?.step("左侧${if (leftBlocked) "堵" else "通"} 右侧${if (rightBlocked) "堵" else "通"}")
 
         if (frontBlocked) {
             // Trapped ahead: the relative lateral dodge steps toward the open side
@@ -373,7 +376,9 @@ object TurnPriming: TurnPrimingBase {
             val leftEdge = extendsToLaneEdge(dx + lx, dz + lz)
             val rightEdge = extendsToLaneEdge(dx - lx, dz - lz)
             // Exactly one wall flush means the gap is on the other side.
-            trace?.step("左墙${if (leftEdge) "无缝" else "有缝"} 右墙${if (rightEdge) "无缝" else "有缝"}")
+            // Mirror the code sides for the player's view: leftBlocked means the
+            // lane on the player's RIGHT is unusable.
+            trace?.step("右墙${if (leftEdge) "无缝" else "有缝"} 左墙${if (rightEdge) "无缝" else "有缝"}")
             val nudge = dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff,
                                    leftEdge,
                                    rightEdge)
@@ -419,7 +424,7 @@ object TurnPriming: TurnPrimingBase {
             //logger.info("NS setting boat pos to x: ${rootX + 0.5 + nudgeX}, y: ${boat.y}, z: ${boat.z}")
             val nx = rootX + 0.5 + nudgeX
             boat.setPosition(nx, boat.y, boat.z)
-            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(nudgeX)} → ${CenterTrace.pos(nx, boat.y, boat.z)}")
+            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(-nudgeX)} → ${CenterTrace.pos(nx, boat.y, boat.z)}")
         } else {
             val startX = if (direction == Direction.WEST) -scanAhead else -1
             val endX = if (direction == Direction.WEST) 1 else scanAhead
@@ -436,7 +441,7 @@ object TurnPriming: TurnPrimingBase {
             //logger.info("setting boat pos to x: ${boat.x}, y: ${boat.x}, z: ${rootZ + 0.5 + nudgeZ}")
             val nz = rootZ + 0.5 + nudgeZ
             boat.setPosition(boat.x, boat.y, nz)
-            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(nudgeZ)} → ${CenterTrace.pos(boat.x, boat.y, nz)}")
+            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(-nudgeZ)} → ${CenterTrace.pos(boat.x, boat.y, nz)}")
         }
         trace?.flush(MinecraftClient.getInstance().player)
     }

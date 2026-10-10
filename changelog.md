@@ -4,7 +4,8 @@
 - Added a "Debug Smart Center" option that echoes Smart Center's decision to the chat as a few
   short lines: whether the front is blocked ("前堵" / "前通"), whether the left and right lanes are
   open, which branch was taken (relative dodge, corridor gap snap, or the multi-block sweep), and
-  the resulting offset and position. The whole trace is emitted as one multi-line message per call
+  the resulting offset and position. Left/right wording follows the player's perspective. The
+  whole trace is emitted as one multi-line message per call
   so it stays readable at once. It fires for the Smart Center key, primed turns and Re-Snap; the
   per-tick "Always Smart Center" path is not traced, since it would flood the chat.
 

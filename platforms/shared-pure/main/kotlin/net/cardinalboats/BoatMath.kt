@@ -50,8 +50,11 @@ fun dodgeNudge(leftBlocked: Boolean,
         !rightBlocked && leftBlocked  ->  NUDGE_STEP  // only the right lane is open -> step right
         !leftBlocked && !rightBlocked -> when {
             // Both side lanes are open: do NOT cancel the two ±NUDGE_STEP's. Lean
-            // toward the side the boat already sits on; if it is centered, toward
-            // the bow's yaw drift (defaulting to the right).
+            // toward the side the boat already sits on; if it is centered, counter
+            // the bow's yaw drift to straighten the bow (a straight bow defaults
+            // to +NUDGE_STEP). Sign note: a positive nudge steps along (-lx, -lz),
+            // where lx is the code "left" step, which actually points to the
+            // player's RIGHT - so callers see positive = player-left.
             abs(sideOffset) >= CENTERED_EPSILON -> if (sideOffset > 0) -NUDGE_STEP else NUDGE_STEP
             yawDiff < -YAW_DRIFT_EPSILON        -> -NUDGE_STEP
             yawDiff >  YAW_DRIFT_EPSILON        ->  NUDGE_STEP
