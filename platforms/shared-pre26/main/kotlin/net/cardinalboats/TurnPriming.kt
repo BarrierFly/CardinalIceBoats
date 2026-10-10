@@ -47,43 +47,53 @@ object TurnPriming: TurnPrimingBase {
 
     private val tasks = mutableListOf<TickCountingTask>()
 
-    // Decision-trace echo for debugSmartCenter. Deliberately terse: one short
-    // line per decision ("前堵" / "前通"), never the sub-probes that produced it.
-    // Lines accumulate across one smartCenter call and are flushed to chat as a
-    // single multi-line message at the very end, so the whole chain stays readable
-    // at once instead of being overwritten by the next overlay line.
+    // Decision-trace echo for debugSmartCenter. Compact: one line of probe
+    // context (trigger, facing, lane/wall probes) plus one result line, flushed
+    // together at the end of the smartCenter call.
     class CenterTrace(private val source: String) {
-        private val lines = mutableListOf<String>()
+        private var head = ""
+        private val probes = mutableListOf<String>()
+        private var outcome: String? = null
 
-        // Reads as one glanceable line per step; the caller supplies the wording.
-        fun step(text: String) {
-            lines.add("§7-§f $text")
+        fun header(direction: Direction) {
+            head = "§8[§fSC§8]§7 $source§8 ·§f ${playerWord(direction)}"
         }
 
-        fun header(direction: String, rootX: Int, rootY: Int, rootZ: Int) {
-            lines.add("§8[§fSC§8]§7 $source§8 ·§f $direction§8 ($rootX,$rootY,$rootZ)")
+        // Probe results share the header line, separated by a middot.
+        fun step(text: String) {
+            probes.add(text)
         }
 
         fun result(text: String) {
-            lines.add("§8=§a $text")
+            outcome = text
         }
 
         fun flush(player: ClientPlayerEntity?) {
-            if (lines.isEmpty()) return
-            clientChatLog(player, lines.joinToString("\n"))
+            val out = mutableListOf<String>()
+            val context = (listOf(head) + probes).filter { it.isNotEmpty() }
+            if (context.isNotEmpty()) out.add(context.joinToString("§8 ·§f "))
+            outcome?.let { out.add("§8=§a $it") }
+            if (out.isEmpty()) return
+            clientChatLog(player, out.joinToString("\n"))
         }
 
         companion object {
-            // A nudge is positive to the right; report it as words plus a bare
-            // magnitude, which is all the reader needs to picture the result.
-            fun shift(v: Double): String = when {
-                v > 0.0 -> "偏右 ${String.format("%.1f", v)}"
-                v < 0.0 -> "偏左 ${String.format("%.1f", -v)}"
-                else -> "不动"
+            // shift() takes the signed displacement along the player's RIGHT axis:
+            // positive is the player's right, negative the player's left. Callers
+            // must convert their raw code-side values into that axis first.
+            fun playerWord(direction: Direction): String = when (direction) {
+                Direction.SOUTH -> "南"
+                Direction.WEST  -> "西"
+                Direction.NORTH -> "北"
+                Direction.EAST  -> "东"
+                else            -> direction.name
             }
 
-            fun pos(x: Double, y: Double, z: Double): String =
-                String.format("(%.1f, %.1f, %.1f)", x, y, z)
+            fun shift(v: Double): String = when {
+                v > 0.0 -> "向右移 ${String.format("%.1f", v)}"
+                v < 0.0 -> "向左移 ${String.format("%.1f", -v)}"
+                else -> "不动"
+            }
         }
     }
 
@@ -272,7 +282,7 @@ object TurnPriming: TurnPrimingBase {
 
         val tracing = source != null && CIBConfig.getInstance().debugSmartCenter
         val trace = if (tracing) CenterTrace(source!!) else null
-        trace?.header(direction.name, rootX, rootY, rootZ)
+        trace?.header(direction)
 
         // Forward step (dx, dz) and perpendicular "left" step (lx, lz) for the boat's facing.
         // The "right" step is the negation of "left".
@@ -343,27 +353,27 @@ object TurnPriming: TurnPrimingBase {
 
         val leftBlocked = !sideLaneOpen(dx + lx, dz + lz)
         val rightBlocked = !sideLaneOpen(dx - lx, dz - lz)
-        // The nudge's sign is mirrored (negative = player-right): positive steps
-        // along (-lx, -lz) with lx being the code-left (= player-right) axis, so
-        // positive is the player's LEFT.
-        trace?.step("左侧${if (leftBlocked) "堵" else "通"} 右侧${if (rightBlocked) "堵" else "通"}")
+        // leftBlocked probes (dx+lx, dz+lz); (lx, lz) is the code "left" step,
+        // which is mirrored and points to the player's RIGHT. Report the player's
+        // view, so the code-left lane is the player's right lane.
+        trace?.step("左${if (rightBlocked) "堵" else "通"} 右${if (leftBlocked) "堵" else "通"}")
 
         if (frontBlocked) {
             // Trapped ahead: the relative lateral dodge steps toward the open side
             // lane; both side lanes blocked defers to the multi-block centering.
             val nudge = dodgeNudge(leftBlocked, rightBlocked, sideOffset, yawDiff)
             if (nudge != 0.0) {
-                // Positive nudge steps right, along (-lx, -lz); same formula for all 4 facings.
+                // A positive nudge steps along (-lx, -lz), the player's LEFT; same
+                // formula for all 4 facings.
                 val nx = boat.x - nudge * lx
                 val nz = boat.z - nudge * lz
                 boat.setPosition(nx,
                                  boat.y,
                                  nz)
-                trace?.result("相对偏移 ${CenterTrace.shift(nudge)} → ${CenterTrace.pos(nx, boat.y, nz)}")
+                trace?.result("相对偏移 ${CenterTrace.shift(-nudge)}")
                 trace?.flush(MinecraftClient.getInstance().player)
                 return
             }
-            trace?.step("两侧无路，走多块扫描")
         } else if (leftBlocked && rightBlocked) {
             // Corridor: the front is clear but both ahead-side lanes are walled.
             // Lean toward the wall whose collision does NOT reach the passage edge
@@ -396,11 +406,10 @@ object TurnPriming: TurnPrimingBase {
                     nz = rootZ + 0.5 - nudge * lz
                 }
                 boat.setPosition(nx, boat.y, nz)
-                trace?.result("绝对偏移 ${CenterTrace.shift(nudge)} → ${CenterTrace.pos(nx, boat.y, nz)}")
+                trace?.result("绝对偏移 ${CenterTrace.shift(-nudge)}")
                 trace?.flush(MinecraftClient.getInstance().player)
                 return
             }
-            trace?.step("两墙齐平或都有缝，走多块扫描")
         }
 
         // Fall through: original multi-block centering logic. Used when the front is
@@ -424,7 +433,7 @@ object TurnPriming: TurnPrimingBase {
             //logger.info("NS setting boat pos to x: ${rootX + 0.5 + nudgeX}, y: ${boat.y}, z: ${boat.z}")
             val nx = rootX + 0.5 + nudgeX
             boat.setPosition(nx, boat.y, boat.z)
-            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(-nudgeX)} → ${CenterTrace.pos(nx, boat.y, boat.z)}")
+            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(nudgeX * lx)}")
         } else {
             val startX = if (direction == Direction.WEST) -scanAhead else -1
             val endX = if (direction == Direction.WEST) 1 else scanAhead
@@ -441,7 +450,7 @@ object TurnPriming: TurnPrimingBase {
             //logger.info("setting boat pos to x: ${boat.x}, y: ${boat.x}, z: ${rootZ + 0.5 + nudgeZ}")
             val nz = rootZ + 0.5 + nudgeZ
             boat.setPosition(boat.x, boat.y, nz)
-            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(-nudgeZ)} → ${CenterTrace.pos(boat.x, boat.y, nz)}")
+            trace?.result("多块扫描 ${scanAhead} 格 ${CenterTrace.shift(nudgeZ * lz)}")
         }
         trace?.flush(MinecraftClient.getInstance().player)
     }
