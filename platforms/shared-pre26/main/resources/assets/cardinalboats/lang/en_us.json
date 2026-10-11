@@ -39,6 +39,9 @@
     "text.autoconfig.CardinalBoat.option.smartCenterLookAhead":                     "Smart Center Lookahead",
     "text.autoconfig.CardinalBoat.option.smartCenterLookAhead.@Tooltip":            "Number of blocks ahead of you that smart center scans for walls.",
 
+    "text.autoconfig.CardinalBoat.option.surfaceMaxDrop":                        "Surface Drop Tolerance",
+    "text.autoconfig.CardinalBoat.option.surfaceMaxDrop.@Tooltip":               "How many blocks a lane surface may sit below the boat and still count as rideable, so stepped downhill ice and water lanes are recognised.\n0 keeps the pre-2.3 behaviour: any surface lower than the boat reads as a wall.",
+
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurn":                    "Smart Center on Primed Turns",
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurn.@Tooltip":           "Boat will automatically smart center itself after taking a primed turn",
 

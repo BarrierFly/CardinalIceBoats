@@ -43,6 +43,10 @@ public class CIBConfig implements ConfigData {
     public int smartCenterLookAhead = 5;
 
     @ConfigEntry.Gui.Tooltip
+    @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+    public int surfaceMaxDrop = 2;
+
+    @ConfigEntry.Gui.Tooltip
     public boolean smartCenterPrimedTurn = true;
 
     @ConfigEntry.Gui.Tooltip

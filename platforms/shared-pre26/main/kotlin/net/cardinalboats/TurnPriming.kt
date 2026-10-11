@@ -256,9 +256,9 @@ object TurnPriming: TurnPrimingBase {
         }
 
         for (i in map.indices) {
-            val testBlockPos = BlockPos(rootX + map[i][0], rootY, rootZ + map[i][1])
-            val testBlockPosAbove = BlockPos(rootX + map[i][0], rootY + 1, rootZ + map[i][1])
-            if (isIce(level.getBlockState(testBlockPos)) || isWater(level.getBlockState(testBlockPosAbove))) {
+            // Downhill lanes count too (2.3): the probe accepts a surface up to
+            // surfaceMaxDrop blocks below the boat's nominal level.
+            if (surfaceDropAt(level, rootX + map[i][0], rootY + 1, rootZ + map[i][1], CIBConfig.getInstance().surfaceMaxDrop) != null) {
                 lieAboutMovingForward = true
                 val snapBlock = snapBlockMap[direction]!![i]
                 boat.setPosition(rootX + snapBlock[0] + 0.5, boat.y, rootZ + snapBlock[1] + 0.5)
@@ -298,9 +298,11 @@ object TurnPriming: TurnPrimingBase {
             return !world.getBlockState(pos).getCollisionShape(world, pos).isEmpty
         }
         // Ice sits one block below the boat; water is level with the boat.
-        fun hasSurfaceAt(x: Int, z: Int): Boolean {
-            return isIce(world.getBlockState(BlockPos(rootX + x, rootY - 1, rootZ + z)))
-                    || isWater(world.getBlockState(BlockPos(rootX + x, rootY, rootZ + z)))
+        // Since 2.3 the probe also accepts a surface up to surfaceMaxDrop
+        // blocks below the nominal level (downhill lanes). Returns the drop
+        // depth, or null when the column has no reachable surface.
+        fun surfaceDrop(x: Int, z: Int): Int? {
+            return surfaceDropAt(world, rootX + x, rootY, rootZ + z, CIBConfig.getInstance().surfaceMaxDrop)
         }
 
         // Step 1: probe the lane the boat is currently in (front block + front-upper block).
@@ -309,10 +311,12 @@ object TurnPriming: TurnPrimingBase {
 
         // A side lane only counts as open when it is collision-free AND still has
         // a rideable surface - a missing surface is treated like a wall so the
-        // boat never dodges off the lane. See dodgeNudge in BoatMath.kt for the
-        // decision table.
-        fun sideLaneOpen(x: Int, z: Int): Boolean {
-            return !collidesAt(x, z, 0) && !collidesAt(x, z, 1) && hasSurfaceAt(x, z)
+        // boat never dodges off the lane. Since 2.3 a surface up to surfaceMaxDrop
+        // blocks below the boat counts, so downhill side lanes are usable; a fully
+        // surfaceless lane still reads as a wall. See dodgeNudge in BoatMath.kt
+        // for the decision table.
+        fun sideLaneDrop(x: Int, z: Int): Int? {
+            return if (!collidesAt(x, z, 0) && !collidesAt(x, z, 1)) surfaceDrop(x, z) else null
         }
 
         // True when the collision shape of the ahead-side block at (x, z) - offsets
@@ -351,12 +355,21 @@ object TurnPriming: TurnPrimingBase {
         }
         yawDiff = ((yawDiff + 180f) % 360f + 360f) % 360f - 180f
 
-        val leftBlocked = !sideLaneOpen(dx + lx, dz + lz)
-        val rightBlocked = !sideLaneOpen(dx - lx, dz - lz)
+        val leftLaneDrop = sideLaneDrop(dx + lx, dz + lz)
+        val rightLaneDrop = sideLaneDrop(dx - lx, dz - lz)
+        val leftBlocked = leftLaneDrop == null
+        val rightBlocked = rightLaneDrop == null
         // leftBlocked probes (dx+lx, dz+lz); (lx, lz) is the code "left" step,
         // which is mirrored and points to the player's RIGHT. Report the player's
-        // view, so the code-left lane is the player's right lane.
-        trace?.step("左${if (rightBlocked) "堵" else "通"} 右${if (leftBlocked) "堵" else "通"}")
+        // view, so the code-left lane is the player's right lane. An open lane
+        // sitting lower than the boat reports its drop: 左通(-1) means the
+        // player's left lane surface is one block below the boat.
+        fun laneWord(drop: Int?): String = when {
+            drop == null -> "堵"
+            drop == 0    -> "通"
+            else         -> "通($drop)"
+        }
+        trace?.step("左${laneWord(rightLaneDrop)} 右${laneWord(leftLaneDrop)}")
 
         if (frontBlocked) {
             // Trapped ahead: the relative lateral dodge steps toward the open side

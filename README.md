@@ -8,6 +8,7 @@
 
 - **多版本支持**：Fabric 平台覆盖 MC 1.19.2 / 1.20.1 / 1.21.1 / 1.21.10 / 1.21.11 / 26.1.2；共享代码拆成 `shared-26`（Mojang 映射）与 `shared-pre26`（Yarn 映射）。原仓库已放弃 26 以下所有版本。
 - **Smart Center 重写**：单格侧向探测 + 落点冰/水校验（不会把船推出车道），原多格对中逻辑保留为兜底；两侧都被墙堵住时，若恰好一侧墙的碰撞贴合车道边缘，则向另一侧（留有缝隙的一侧）横移 0.2 挤过去；修复 EAST / WEST 横移轴向与格内偏移符号两处 bug。
+- **下坡车道识别**（2.3）：车道表面比船低不超过「下坡落差容许」（`surfaceMaxDrop`，默认 2）格时仍算可行驶，阶梯式下坡冰道/水道可正常预约转向与侧向横移；2.2.x 中比船低的表面一律按墙处理（不会横移进低处）。
 - **Re-Snap 触发 Smart Center**（`smartCenterOnSnap` 配置项）；三个快捷键不再要求"船必须在冰上"。
 - **冰/水识别用原版标签**：冰 = `#minecraft:ice`，水 = 流体状态 `#minecraft:water`（含含水方块），取代按方块名正则匹配，且两者分离判定。
 - **预约转向常驻指示**：转向被预约期间，快捷栏上方持续显示 ◀◀ / ▶▶（受「显示状态消息」开关控制）。
@@ -33,6 +34,7 @@ This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/Cod
 
 - **Multi-version support**: Fabric builds for MC 1.19.2 / 1.20.1 / 1.21.1 / 1.21.10 / 1.21.11 / 26.1.2, with shared code split into `shared-26` (Mojang mappings) and `shared-pre26` (Yarn mappings). Upstream has dropped everything below 26.x.
 - **Rewritten Smart Center**: single-block lateral probe plus a landing-side ice/water check (never pushes the boat off its lane), with the original multi-block centering kept as a fallback. With a collision dead ahead, the boat uses the relative lateral dodge toward the open side lane. When the front is clear but both ahead-side lanes are walled and exactly one wall's collision is flush with the passage edge, the boat is absolutely snapped 0.2 toward the other side, whose recessed wall leaves a gap to squeeze through (cross-axis snap only — it leans into the gap without ever leaving the lane); fixes two bugs — the EAST / WEST nudge axis and the in-block offset sign.
+- **Downhill lane recognition** (2.3): a lane surface up to "Surface Drop Tolerance" (`surfaceMaxDrop`, default 2) blocks below the boat still counts as rideable, so stepped downhill ice/water lanes work for primed turns and lateral dodging; in 2.2.x any surface lower than the boat was treated as a wall (no dodging into lower lanes).
 - **Smart Center on Re-Snap** (`smartCenterOnSnap` option); the three keybinds no longer require the boat to be on ice.
 - **Tag-based ice/water detection**: ice = `#minecraft:ice`, water = `#minecraft:water` fluid state (includes waterlogged blocks), replacing the regex-over-block-name matching; the two predicates are separate.
 - **Persistent primed-turn indicator**: ◀◀ / ▶▶ shown above the hotbar while a turn is pending (gated by "Show Status Messages").
@@ -58,6 +60,7 @@ This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/Cod
 - **与原版船物理不一致**：
   - 旋转/掉头时把当前速度整体旋转到新朝向（受「转向时保持速度」控制），横向漂移会被"折算"成前进速度，略强于原版；
   - 预约转向触发时的对线瞬移最多横移 2 格；瞬时掉头原地完成，无惯性摆动。
+- **横移进低处车道会原地掉落**：下坡识别放开后（2.3），侧向避让可能把船移进低 1–2 格的车道，船会原位下落同样格数——冰上可控、水上安全；落差超过容许值或落低后上方有碰撞的列仍按墙拒绝。上坡（表面升高）不纳入识别。
 - **冰/水识别基于原版标签**：冰 = `#minecraft:ice`（ice / packed_ice / blue_ice / frosted_ice），水 = 流体状态为 `#minecraft:water`（含含水方块与流水）。modded 冰类或低摩擦方块不再被识别。
 - **放置吸附的已知局限**：放置判定使用不含流体的射线；瞄准开阔深水时可能 MISS 或命中水底的普通方块，此时不会吸附——与原版放置逻辑所用的含流体射线并不一致。
 - **智能居中不做服务端确认**：所有探测基于客户端世界状态，高延迟下位置可能被服务器回弹。
@@ -70,6 +73,7 @@ This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/Cod
 - **Not vanilla-accurate boat physics**:
   - Turns and reverses rotate the entire current velocity vector into the new facing (configurable); lateral drift is silently converted into forward speed, which is stronger than vanilla;
   - The primed-turn lane snap can teleport the boat up to 2 blocks sideways; Instant Reverse happens in place with no inertia swing.
+- **Dodging into a lower lane drops the boat in place**: with downhill recognition enabled (2.3), a lateral dodge may move the boat into a lane 1–2 blocks lower, and the boat falls that distance — controllable on ice, safe on water; columns that drop further than the tolerance or have a collision above the lower surface are still refused as walls. Uphill (raised) surfaces are not recognised.
 - **Ice/water detection is tag-based**: ice = `#minecraft:ice` (ice / packed_ice / blue_ice / frosted_ice), water = a `#minecraft:water` fluid state (covers waterlogged blocks and flowing water). Modded ice-like or slippery blocks are no longer detected.
 - **Known limitation of placement snapping**: the snap check raycasts without fluids; aiming at open deep water can MISS or hit a plain block on the lakebed and then not snap — inconsistent with vanilla's own fluid-aware placement raycast.
 - **Smart Center is client-side only**: all probing uses client-side world state; on high latency the position may be rubber-banded back by the server.

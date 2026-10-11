@@ -39,6 +39,9 @@
     "text.autoconfig.CardinalBoat.option.smartCenterLookAhead":                     "智能居中探测距离",
     "text.autoconfig.CardinalBoat.option.smartCenterLookAhead.@Tooltip":            "智能居中向前扫描墙体的方块数量。",
 
+    "text.autoconfig.CardinalBoat.option.surfaceMaxDrop":                        "下坡落差容许",
+    "text.autoconfig.CardinalBoat.option.surfaceMaxDrop.@Tooltip":               "车道表面比船低多少格以内仍算可行驶，让阶梯式下坡冰道与水道也能被识别。\n0 为关闭：比船低的表面一律按墙处理（2.3 之前的行为）。",
+
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurn":                    "预约转向后智能居中",
     "text.autoconfig.CardinalBoat.option.smartCenterPrimedTurn.@Tooltip":           "完成预约转向后，船会自动再次智能居中。",
 

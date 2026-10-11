@@ -27,6 +27,47 @@ fun isCardinallyAligned(yRot: Float): Boolean {
 }
 
 /**
+ * Walk one column downward from the boat's nominal surface level to find how
+ * far the rideable surface has dropped. Depth 0 is the nominal level; the
+ * column is searched maxDrop steps down. Callers translate each depth d into
+ * block offsets and feed them back through the probes, which take a Y offset
+ * relative to the boat's block: the nominal surface level is -1 for ice and 0
+ * (the boat's own layer) for water.
+ *
+ * A hit deeper than the nominal level only counts when every cell from just
+ * above the found block up to the boat's own layer is collision-free - a hit
+ * under a collision is a step/wall, not a slope, and reads as no surface.
+ * Depth 0 skips the clearance walk so flat lanes probe exactly as before 2.3.
+ * Raised surfaces (uphill) are out of scope by design: they need upward
+ * momentum, a drop does not.
+ *
+ * @param maxDrop    how many blocks below the nominal level to search;
+ *                   0 disables downhill probing entirely
+ * @return the drop depth in blocks (0 = surface at the nominal level), or
+ *         null when no reachable surface exists within maxDrop
+ */
+fun surfaceDropDepth(maxDrop: Int,
+                     isIceAt: (Int) -> Boolean,
+                     isWaterAt: (Int) -> Boolean,
+                     collidesAt: (Int) -> Boolean): Int? {
+    for (depth in 0..maxDrop) {
+        val iceY = -1 - depth
+        val waterY = -depth
+        val hitY = when {
+            isIceAt(iceY)     -> iceY
+            isWaterAt(waterY) -> waterY
+            else -> continue
+        }
+        if (depth == 0) return 0
+        for (y in hitY + 1..0) {
+            if (collidesAt(y)) return null
+        }
+        return depth
+    }
+    return null
+}
+
+/**
  * Decide the smart-center dodge direction.
  *
  * @param leftBlocked  the left side lane is not usable (wall, or no ice/water surface)
