@@ -19,7 +19,7 @@ configurations.all {
 
 
 modVersion {
-    semanticVersion = "2.2.5"
+    semanticVersion = "2.3.0"
     release = {
         false
     }

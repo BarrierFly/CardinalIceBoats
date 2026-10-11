@@ -1,4 +1,17 @@
 <!-- latest begin -->
+### 2.3.0
+
+- Downhill ice/water lanes are now recognised. All lane probes previously assumed a constant
+  surface height (ice one block below the boat, water level with it), so stepped downhill lanes
+  were invisible: a primed turn would not fire on a slope and side lanes a block or two lower
+  were treated as walls. The new column probe walks down from the nominal surface level and
+  accepts a hit up to "Surface Drop Tolerance" (`surfaceMaxDrop`, default 2) blocks below the
+  boat, provided the path down to the boat's own layer is collision-free - a surface under a
+  block reads as a step, not a slope. Primed turns fire on downhill lanes, Smart Center dodges
+  into downhill side lanes, and the debug trace reports a lowered lane as 通(-1). Setting
+  `surfaceMaxDrop` to 0 restores the 2.2.x behaviour. Uphill (raised) surfaces are not
+  recognised; dodging into a lower lane drops the boat that distance in place.
+
 ### 2.2.5
 
 - Added a "Debug Smart Center" option that echoes Smart Center's decision to the chat as a few

@@ -2,7 +2,7 @@
 
 ## 与原仓库的对比 (Comparison with Upstream)
 
-本仓库 fork 自 [CodeF53/CardinalIceBoats](https://github.com/CodeF53/CardinalIceBoats)，共同祖先为 `50448ac`（原仓库 2026-05-31 发布的 v2.1.0）。此后两边独立演进：本仓库沿 2.2.x 系列做多版本支持与智能居中打磨；原仓库转向 MC 26.2 / 26.3 与 libIPN 配置系统，并于 2026-09-27 将 tag `v2.1.0` 重新指向新提交发布了新版。两边版本号不可直接比较，请以提交内容为准（本仓库当前 2.2.3，基于原仓库第一版 v2.1.0）。
+本仓库 fork 自 [CodeF53/CardinalIceBoats](https://github.com/CodeF53/CardinalIceBoats)，共同祖先为 `50448ac`（原仓库 2026-05-31 发布的 v2.1.0）。此后两边独立演进：本仓库沿 2.2.x 系列做多版本支持与智能居中打磨；原仓库转向 MC 26.2 / 26.3 与 libIPN 配置系统，并于 2026-09-27 将 tag `v2.1.0` 重新指向新提交发布了新版。两边版本号不可直接比较，请以提交内容为准（本仓库当前 2.3.0，基于原仓库第一版 v2.1.0）。
 
 ### 本仓库独有（原仓库没有）
 
@@ -28,7 +28,7 @@
 
 ## Comparison with Upstream
 
-This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/CodeF53/CardinalIceBoats); the common ancestor is `50448ac` (upstream's v2.1.0, released 2026-05-31). Since then the two lines evolved independently: this repository continues as the 2.2.x series (multi-version support and Smart Center polish), while upstream moved to MC 26.2 / 26.3 and the libIPN config system, and on 2026-09-27 released a new version re-pointing the `v2.1.0` tag at a new commit. Version numbers are therefore not comparable across the two repos — judge by content (this repo is currently 2.2.3, based on upstream's first v2.1.0).
+This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/CodeF53/CardinalIceBoats); the common ancestor is `50448ac` (upstream's v2.1.0, released 2026-05-31). Since then the two lines evolved independently: this repository continues as the 2.2.x series (multi-version support and Smart Center polish), while upstream moved to MC 26.2 / 26.3 and the libIPN config system, and on 2026-09-27 released a new version re-pointing the `v2.1.0` tag at a new commit. Version numbers are therefore not comparable across the two repos — judge by content (this repo is currently 2.3.0, based on upstream's first v2.1.0).
 
 ### This repo only (not in upstream)
 
