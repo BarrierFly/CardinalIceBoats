@@ -1,6 +1,12 @@
 <!-- latest begin -->
 ### 2.3.0
 
+- Smart Center now also accepts a non-ice block as a lane surface when its collision does not
+  reach the block top (collision-free blocks included), the block across the lane to its left or
+  right is ice, and the cells above both blocks up to the boat's layer are collision-free - such
+  a block is then treated as ice. Only Smart Center's side-lane probes do this; turn priming
+  keeps the strict ice/water rule.
+
 - Downhill ice/water lanes are now recognised. All lane probes previously assumed a constant
   surface height (ice one block below the boat, water level with it), so stepped downhill lanes
   were invisible: a primed turn would not fire on a slope and side lanes a block or two lower

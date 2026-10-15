@@ -62,6 +62,7 @@ This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/Cod
   - 预约转向触发时的对线瞬移最多横移 2 格；瞬时掉头原地完成，无惯性摆动。
 - **横移进低处车道会原地掉落**：下坡识别放开后（2.3），侧向避让可能把船移进低 1–2 格的车道，船会原位下落同样格数——冰上可控、水上安全；落差超过容许值或落低后上方有碰撞的列仍按墙拒绝。上坡（表面升高）不纳入识别。
 - **冰/水识别基于原版标签**：冰 = `#minecraft:ice`（ice / packed_ice / blue_ice / frosted_ice），水 = 流体状态为 `#minecraft:water`（含含水方块与流水）。modded 冰类或低摩擦方块不再被识别。
+- **智能居中的仿冰判定（2.3）**：智能居中的侧车道探测里，非冰方块若碰撞不到顶（含完全无碰撞的方块），且跨车道方向（船的左右侧）左侧或右侧为冰，且两者上方到船所在层整列无碰撞，则按冰处理。预约转向前瞻仍按严格冰/水标签判定。
 - **放置吸附的已知局限**：放置判定使用不含流体的射线；瞄准开阔深水时可能 MISS 或命中水底的普通方块，此时不会吸附——与原版放置逻辑所用的含流体射线并不一致。
 - **智能居中不做服务端确认**：所有探测基于客户端世界状态，高延迟下位置可能被服务器回弹。
 - **Forge / NeoForge 暂缓维护**：自 2.2.x 起不再参与构建（`settings.gradle.kts` 未 include）。仓库中保留的 Forge/NeoForge 目录代码已过时（含已知 bug，例如聊天移动计时器未复位），请勿直接使用。
@@ -75,6 +76,7 @@ This repository is forked from [CodeF53/CardinalIceBoats](https://github.com/Cod
   - The primed-turn lane snap can teleport the boat up to 2 blocks sideways; Instant Reverse happens in place with no inertia swing.
 - **Dodging into a lower lane drops the boat in place**: with downhill recognition enabled (2.3), a lateral dodge may move the boat into a lane 1–2 blocks lower, and the boat falls that distance — controllable on ice, safe on water; columns that drop further than the tolerance or have a collision above the lower surface are still refused as walls. Uphill (raised) surfaces are not recognised.
 - **Ice/water detection is tag-based**: ice = `#minecraft:ice` (ice / packed_ice / blue_ice / frosted_ice), water = a `#minecraft:water` fluid state (covers waterlogged blocks and flowing water). Modded ice-like or slippery blocks are no longer detected.
+- **Smart Center pseudo-ice (2.3)**: Smart Center's side-lane probes also treat a non-ice block as ice when its collision does not reach the block top (collision-free blocks included), the block across the lane to its left or right is ice, and the cells above both blocks up to the boat's layer are collision-free. Turn priming keeps the strict tag-based rule.
 - **Known limitation of placement snapping**: the snap check raycasts without fluids; aiming at open deep water can MISS or hit a plain block on the lakebed and then not snap — inconsistent with vanilla's own fluid-aware placement raycast.
 - **Smart Center is client-side only**: all probing uses client-side world state; on high latency the position may be rubber-banded back by the server.
 - **Forge / NeoForge on hold**: not built since 2.2.x (excluded from `settings.gradle.kts`). The Forge/NeoForge directories still in the repo are stale (with known bugs, e.g. the chat-move timer reset) — do not use them as-is.

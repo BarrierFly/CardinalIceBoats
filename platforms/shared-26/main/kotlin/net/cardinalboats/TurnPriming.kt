@@ -297,7 +297,12 @@ object TurnPriming: TurnPrimingBase {
         // blocks below the nominal level (downhill lanes). Returns the drop
         // depth, or null when the column has no reachable surface.
         fun surfaceDrop(x: Int, z: Int): Int? {
-            return surfaceDropAt(world, rootX + x, rootY, rootZ + z, CIBConfig.getInstance().surfaceMaxDrop)
+            // Smart Center also accepts a low non-ice block beside ice as a
+            // surface (2.3): the across-lane axis from the facing gives the
+            // probe its left/right neighbours. Turn priming keeps the strict
+            // ice/water rule.
+            return surfaceDropAt(world, rootX + x, rootY, rootZ + z, CIBConfig.getInstance().surfaceMaxDrop,
+                                 if (lx != 0) Direction.Axis.X else Direction.Axis.Z)
         }
 
         // Step 1: probe the lane the boat is currently in (front block + front-upper block).
